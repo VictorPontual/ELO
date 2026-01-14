@@ -1,0 +1,59 @@
+form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+form p {
+    margin-bottom: 1rem;
+}
+
+form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="password"],
+form select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+form input:focus,
+form select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.errorlist {
+    list-style: none;
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+form button {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+form p:last-of-type {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+form p:last-of-type a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+form p:last-of-type a:hover {
+    text-decoration: underline;
+}
