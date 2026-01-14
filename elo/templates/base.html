@@ -1,12 +1,45 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>ELO</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ELO{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container">
-        {% block content %}
-        {% endblock %}
-    </div>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/">ELO</a>
+            </div>
+            <ul>
+                <li><a href="{% url 'lista_projetos' %}">Projetos</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="">Dashboard</a></li>
+                    <li>Olá, {{ user.get_full_name|default:user.username }}</li>
+                    <li><a href="">Sair</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'cadastro' %}">Cadastro</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 ELO - Sistema de Gerenciamento de Projetos</p>
+    </footer>
+
+    <script src="{% static 'js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
