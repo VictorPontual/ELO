@@ -16,8 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+def home(request):
+    if request.user.is_authenticated:
+        return redirect('lista_projetos')
+    return redirect('login')
 
 urlpatterns = [
+    path('', home, name='home'),
     path('admin/', admin.site.urls),
-    path('', include('contas.urls')),
+    path('contas/', include('contas.urls')),
+    path('projetos/', include('projetos.urls')),
 ]
