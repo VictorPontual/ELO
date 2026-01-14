@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+{% endblock %}
+
+{% block content %}
+<h2>Projetos e Pesquisas</h2>
+
+{% if projetos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Nome do Projeto</th>
+                <th>Pesquisador Líder</th>
+                <th>Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for projeto in projetos %}
+            <tr>
+                <td>{{ projeto.nome }}</td>
+                <td>
+                    {% for participacao in projeto.participacao_set.all %}
+                        {% if participacao.atividade == 'lider' %}
+                            {{ participacao.pesquisador }}
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                <td>{{ projeto.get_tipo_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="no-projects">Nenhum projeto cadastrado ainda.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'projetos/js/lista_projetos.js' %}"></script>
+{% endblock %}
