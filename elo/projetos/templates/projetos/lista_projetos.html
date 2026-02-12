@@ -6,7 +6,10 @@
 {% endblock %}
 
 {% block content %}
-<h2>Projetos e Pesquisas</h2>
+<div class="header-container">
+    <h2>Projetos e Pesquisas</h2>
+    <a href="{% url 'cadastro_projeto' %}" class="btn-novo-projeto">+ Novo Projeto</a>
+</div>
 
 {% if projetos %}
     <table>
@@ -20,15 +23,15 @@
         <tbody>
             {% for projeto in projetos %}
             <tr>
-                <td>{{ projeto.nome }}</td>
+                <td>{{ projeto.titulo }}</td>
                 <td>
                     {% for participacao in projeto.participacao_set.all %}
-                        {% if participacao.atividade == 'lider' %}
-                            {{ participacao.pesquisador }}
+                        {% if participacao.atividade == 'Líder' %}
+                            {{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}
                         {% endif %}
                     {% endfor %}
                 </td>
-                <td>{{ projeto.get_tipo_display }}</td>
+                <td>{{ projeto.tipo_pesq|default:"-" }}</td>
             </tr>
             {% endfor %}
         </tbody>

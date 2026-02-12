@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
+{% endblock %}
+
+{% block title %}Cadastro de Projeto - ELO{% endblock %}
+
+{% block content %}
+<div class="cadastro-container">
+    <h2>Cadastro de Novo Projeto</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="projeto-form">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3>Informações Básicas</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }} *</label>
+                {{ form.titulo }}
+                {% if form.titulo.errors %}
+                    <span class="error">{{ form.titulo.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.data_ent_sig.id_for_label }}">{{ form.data_ent_sig.label }}</label>
+                    {{ form.data_ent_sig }}
+                    {% if form.data_ent_sig.errors %}
+                        <span class="error">{{ form.data_ent_sig.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.data_lib_analise.id_for_label }}">{{ form.data_lib_analise.label }}</label>
+                    {{ form.data_lib_analise }}
+                    {% if form.data_lib_analise.errors %}
+                        <span class="error">{{ form.data_lib_analise.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.class_inst.id_for_label }}">{{ form.class_inst.label }}</label>
+                    {{ form.class_inst }}
+                    {% if form.class_inst.errors %}
+                        <span class="error">{{ form.class_inst.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.tipo_pesq.id_for_label }}">{{ form.tipo_pesq.label }}</label>
+                    {{ form.tipo_pesq }}
+                    {% if form.tipo_pesq.errors %}
+                        <span class="error">{{ form.tipo_pesq.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Características do Projeto</h3>
+            
+            <div class="form-check-group">
+                <div class="form-check">
+                    {{ form.desenvolvimento_tecnologico }}
+                    <label for="{{ form.desenvolvimento_tecnologico.id_for_label }}">{{ form.desenvolvimento_tecnologico.label }}</label>
+                </div>
+
+                <div class="form-check">
+                    {{ form.multicentrico }}
+                    <label for="{{ form.multicentrico.id_for_label }}">{{ form.multicentrico.label }}</label>
+                </div>
+
+                <div class="form-check">
+                    {{ form.parceria_HUB_UNB }}
+                    <label for="{{ form.parceria_HUB_UNB.id_for_label }}">{{ form.parceria_HUB_UNB.label }}</label>
+                </div>
+
+                <div class="form-check">
+                    {{ form.HUB_proponente }}
+                    <label for="{{ form.HUB_proponente.id_for_label }}">{{ form.HUB_proponente.label }}</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.especialidade_proponente.id_for_label }}">{{ form.especialidade_proponente.label }}</label>
+                {{ form.especialidade_proponente }}
+                {% if form.especialidade_proponente.errors %}
+                    <span class="error">{{ form.especialidade_proponente.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.papel_HUB_multi.id_for_label }}">{{ form.papel_HUB_multi.label }}</label>
+                {{ form.papel_HUB_multi }}
+                {% if form.papel_HUB_multi.errors %}
+                    <span class="error">{{ form.papel_HUB_multi.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.linhas_pesq.id_for_label }}">{{ form.linhas_pesq.label }}</label>
+                {{ form.linhas_pesq }}
+                {% if form.linhas_pesq.errors %}
+                    <span class="error">{{ form.linhas_pesq.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Cronograma e Aprovações</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.inicio_coleta.id_for_label }}">{{ form.inicio_coleta.label }}</label>
+                    {{ form.inicio_coleta }}
+                    {% if form.inicio_coleta.errors %}
+                        <span class="error">{{ form.inicio_coleta.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.fim_coleta.id_for_label }}">{{ form.fim_coleta.label }}</label>
+                    {{ form.fim_coleta }}
+                    {% if form.fim_coleta.errors %}
+                        <span class="error">{{ form.fim_coleta.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.data_aprovacao_inst.id_for_label }}">{{ form.data_aprovacao_inst.label }}</label>
+                {{ form.data_aprovacao_inst }}
+                {% if form.data_aprovacao_inst.errors %}
+                    <span class="error">{{ form.data_aprovacao_inst.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.parecer_cep.id_for_label }}">{{ form.parecer_cep.label }}</label>
+                    {{ form.parecer_cep }}
+                    {% if form.parecer_cep.errors %}
+                        <span class="error">{{ form.parecer_cep.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.data_parecer_cep.id_for_label }}">{{ form.data_parecer_cep.label }}</label>
+                    {{ form.data_parecer_cep }}
+                    {% if form.data_parecer_cep.errors %}
+                        <span class="error">{{ form.data_parecer_cep.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'lista_projetos' %}" class="btn-cancelar">Cancelar</a>
+            <button type="submit" class="btn-salvar">Cadastrar Projeto</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'projetos/js/cadastro_projeto.js' %}"></script>
+{% endblock %}
