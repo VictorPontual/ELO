@@ -18,6 +18,7 @@
                 <th>Nome do Projeto</th>
                 <th>Pesquisador Líder</th>
                 <th>Tipo</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -32,10 +33,130 @@
                     {% endfor %}
                 </td>
                 <td>{{ projeto.tipo_pesq|default:"-" }}</td>
+                <td>
+                    <button class="btn-detalhes" data-projeto-id="{{ projeto.sig_id_projeto }}">+</button>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    
+    <!-- Modais fora da tabela -->
+    {% for projeto in projetos %}
+    <div id="modal-{{ projeto.sig_id_projeto }}" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" data-projeto-id="{{ projeto.sig_id_projeto }}">&times;</span>
+            <h2>{{ projeto.titulo }}</h2>
+            
+            <div class="detalhes-section">
+                <h3>Informações Básicas</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>SIG ID:</strong>
+                        <span>{{ projeto.sig_id_projeto }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Data de Entrada no SIG:</strong>
+                        <span>{{ projeto.data_ent_sig|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Data de Liberação para Análise:</strong>
+                        <span>{{ projeto.data_lib_analise|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Classificação Institucional:</strong>
+                        <span>{{ projeto.class_inst|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tipo de Pesquisa:</strong>
+                        <span>{{ projeto.tipo_pesq|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Especialidade do Proponente:</strong>
+                        <span>{{ projeto.especialidade_proponente|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detalhes-section">
+                <h3>Características</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Desenvolvimento Tecnológico:</strong>
+                        <span>{{ projeto.desenvolvimento_tecnologico|yesno:"Sim,Não" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Multicêntrico:</strong>
+                        <span>{{ projeto.multicentrico|yesno:"Sim,Não" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Parceria HUB/UNB:</strong>
+                        <span>{{ projeto.parceria_HUB_UNB|yesno:"Sim,Não" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>HUB Proponente:</strong>
+                        <span>{{ projeto.HUB_proponente|yesno:"Sim,Não" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Papel do HUB no Multicêntrico:</strong>
+                        <span>{{ projeto.papel_HUB_multi|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detalhes-section">
+                <h3>Linhas de Pesquisa</h3>
+                <p>{{ projeto.linhas_pesq|default:"-" }}</p>
+            </div>
+            
+            <div class="detalhes-section">
+                <h3>Cronograma</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Início da Coleta:</strong>
+                        <span>{{ projeto.inicio_coleta|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Fim da Coleta:</strong>
+                        <span>{{ projeto.fim_coleta|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detalhes-section">
+                <h3>Aprovações</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Data de Aprovação Institucional:</strong>
+                        <span>{{ projeto.data_aprovacao_inst|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Parecer CEP:</strong>
+                        <span>{{ projeto.parecer_cep|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Data do Parecer CEP:</strong>
+                        <span>{{ projeto.data_parecer_cep|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detalhes-section">
+                <h3>Participantes</h3>
+                <ul class="participantes-list">
+                    {% for participacao in projeto.participacao_set.all %}
+                        <li>
+                            <strong>{{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}</strong>
+                            - {{ participacao.atividade }}
+                        </li>
+                    {% empty %}
+                        <li>Nenhum participante cadastrado</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 {% else %}
     <p class="no-projects">Nenhum projeto cadastrado ainda.</p>
 {% endif %}
