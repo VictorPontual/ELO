@@ -57,7 +57,20 @@ class ProjetoForm(forms.ModelForm):
 
 @login_required
 def lista_projetos(request):
-    projetos = Projeto.objects.prefetch_related('participacao_set__pesquisador__user').all()
+    # Se o usuário for admin/staff, mostra todos os projetos
+    if request.user.is_staff or request.user.is_superuser:
+        projetos = Projeto.objects.prefetch_related('participacao_set__pesquisador__user').all()
+    else:
+        # Filtrar apenas projetos em que o usuário logado participa
+        try:
+            pesquisador = Pesquisador.objects.get(user=request.user)
+            projetos = Projeto.objects.filter(
+                participacao__pesquisador=pesquisador
+            ).prefetch_related('participacao_set__pesquisador__user').distinct()
+        except Pesquisador.DoesNotExist:
+            # Se o usuário não é um pesquisador, não mostra nenhum projeto
+            projetos = Projeto.objects.none()
+    
     return render(request, 'projetos/lista_projetos.html', {'projetos': projetos})
 
 @login_required
