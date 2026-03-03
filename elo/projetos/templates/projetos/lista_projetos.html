@@ -46,7 +46,12 @@
     <div id="modal-{{ projeto.sig_id_projeto }}" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close" data-projeto-id="{{ projeto.sig_id_projeto }}">&times;</span>
-            <h2>{{ projeto.titulo }}</h2>
+            <div class="modal-header">
+                <h2>{{ projeto.titulo }}</h2>
+                {% if user.is_staff or user.is_superuser %}
+                <button class="btn-edit" data-projeto-id="{{ projeto.sig_id_projeto }}">Editar</button>
+                {% endif %}
+            </div>
             
             <div class="detalhes-section">
                 <h3>Informações Básicas</h3>

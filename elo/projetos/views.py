@@ -97,3 +97,26 @@ def cadastro_projeto(request):
         form = ProjetoForm()
     
     return render(request, 'projetos/cadastro_projeto.html', {'form': form})
+
+@login_required
+def editar_projeto(request, projeto_id):
+    from django.shortcuts import get_object_or_404
+    from django.contrib.auth.decorators import user_passes_test
+    
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para editar projetos.')
+        return redirect('lista_projetos')
+    
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    
+    if request.method == 'POST':
+        form = ProjetoForm(request.POST, instance=projeto)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Projeto atualizado com sucesso!')
+            return redirect('lista_projetos')
+    else:
+        form = ProjetoForm(instance=projeto)
+    
+    return render(request, 'projetos/editar_projeto.html', {'form': form, 'projeto': projeto})

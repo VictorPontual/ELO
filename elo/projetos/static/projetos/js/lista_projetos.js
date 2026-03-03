@@ -33,6 +33,15 @@ document.addEventListener('DOMContentLoaded', function() {
             fecharModal(projetoId);
         });
     });
+    
+    // Botões de editar
+    const botoesEditar = document.querySelectorAll('.btn-edit');
+    botoesEditar.forEach(botao => {
+        botao.addEventListener('click', function() {
+            const projetoId = this.getAttribute('data-projeto-id');
+            window.location.href = `/projetos/editar/${projetoId}/`;
+        });
+    });
 });
 
 // Fechar modal ao clicar fora dele
