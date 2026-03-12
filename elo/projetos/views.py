@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Projeto, Participacao
@@ -55,6 +55,26 @@ class ProjetoForm(forms.ModelForm):
             'HUB_proponente': 'HUB Proponente',
         }
 
+class ParticipacaoForm(forms.ModelForm):
+    class Meta:
+        model = Participacao
+        fields = ['pesquisador', 'atividade']
+        widgets = {
+            'pesquisador': forms.Select(attrs={'class': 'form-control'}),
+            'atividade': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Líder, Pesquisador, Colaborador'}),
+        }
+        labels = {
+            'pesquisador': 'Pesquisador',
+            'atividade': 'Função/Atividade',
+        }
+    
+    def __init__(self, *args, projeto=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if projeto:
+            # Excluir pesquisadores que já participam do projeto
+            participantes_ids = projeto.participacao_set.values_list('pesquisador_id', flat=True)
+            self.fields['pesquisador'].queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+
 @login_required
 def lista_projetos(request):
     # Se o usuário for admin/staff, mostra todos os projetos
@@ -100,9 +120,6 @@ def cadastro_projeto(request):
 
 @login_required
 def editar_projeto(request, projeto_id):
-    from django.shortcuts import get_object_or_404
-    from django.contrib.auth.decorators import user_passes_test
-    
     # Verificar se o usuário é admin
     if not (request.user.is_staff or request.user.is_superuser):
         messages.error(request, 'Você não tem permissão para editar projetos.')
@@ -115,8 +132,61 @@ def editar_projeto(request, projeto_id):
         if form.is_valid():
             form.save()
             messages.success(request, 'Projeto atualizado com sucesso!')
-            return redirect('lista_projetos')
+            return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
     else:
         form = ProjetoForm(instance=projeto)
     
-    return render(request, 'projetos/editar_projeto.html', {'form': form, 'projeto': projeto})
+    # Formulário para adicionar pesquisadores
+    participacao_form = ParticipacaoForm(projeto=projeto)
+    
+    # Lista de participantes atuais
+    participacoes = projeto.participacao_set.select_related('pesquisador__user').all()
+    
+    context = {
+        'form': form,
+        'projeto': projeto,
+        'participacao_form': participacao_form,
+        'participacoes': participacoes,
+    }
+    
+    return render(request, 'projetos/editar_projeto.html', context)
+
+@login_required
+def adicionar_pesquisador(request, projeto_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para adicionar pesquisadores.')
+        return redirect('lista_projetos')
+    
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    
+    if request.method == 'POST':
+        form = ParticipacaoForm(request.POST, projeto=projeto)
+        if form.is_valid():
+            participacao = form.save(commit=False)
+            participacao.projeto = projeto
+            try:
+                participacao.save()
+                messages.success(request, f'Pesquisador adicionado com sucesso!')
+            except Exception as e:
+                messages.error(request, f'Erro ao adicionar pesquisador: {str(e)}')
+        else:
+            messages.error(request, 'Erro ao adicionar pesquisador. Verifique os dados.')
+    
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+@login_required
+def remover_pesquisador(request, projeto_id, participacao_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para remover pesquisadores.')
+        return redirect('lista_projetos')
+    
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    participacao = get_object_or_404(Participacao, id=participacao_id, projeto=projeto)
+    
+    pesquisador_nome = participacao.pesquisador.user.get_full_name() or participacao.pesquisador.user.username
+    participacao.delete()
+    messages.success(request, f'Pesquisador {pesquisador_nome} removido do projeto.')
+    
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)

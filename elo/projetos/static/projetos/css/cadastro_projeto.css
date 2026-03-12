@@ -200,3 +200,141 @@ textarea.form-control {
         grid-template-columns: 1fr;
     }
 }
+
+/* Seção de Gerenciamento de Participantes */
+.participantes-section {
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 3px solid #3498db;
+}
+
+.participantes-section h3 {
+    color: #2c3e50;
+    font-size: 24px;
+    margin-bottom: 25px;
+}
+
+.participantes-section h4 {
+    color: #34495e;
+    font-size: 18px;
+    margin-bottom: 15px;
+    margin-top: 30px;
+}
+
+.participantes-lista {
+    margin-bottom: 30px;
+}
+
+.participantes-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.participantes-table thead {
+    background-color: #34495e;
+    color: white;
+}
+
+.participantes-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.participantes-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ecf0f1;
+    color: #2c3e50;
+}
+
+.participantes-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.participantes-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.no-participantes {
+    text-align: center;
+    padding: 30px;
+    color: #7f8c8d;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.btn-remover {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.btn-remover:hover {
+    background-color: #c0392b;
+    transform: scale(1.1);
+}
+
+.btn-remover span {
+    display: inline-block;
+    line-height: 1;
+}
+
+.adicionar-participante {
+    background-color: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    border: 2px dashed #bdc3c7;
+}
+
+.participacao-form .form-row {
+    margin-bottom: 20px;
+}
+
+.btn-adicionar {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-adicionar:hover {
+    background-color: #229954;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.form-inline {
+    display: inline;
+}
+
+@media (max-width: 768px) {
+    .participantes-table {
+        font-size: 13px;
+    }
+    
+    .participantes-table th,
+    .participantes-table td {
+        padding: 10px;
+    }
+    
+    .adicionar-participante {
+        padding: 15px;
+    }
+}

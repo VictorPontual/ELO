@@ -173,6 +173,74 @@
             <button type="submit" class="btn-salvar">Salvar Alterações</button>
         </div>
     </form>
+
+    <!-- Seção de Gerenciamento de Participantes -->
+    <div class="participantes-section">
+        <h3>Pesquisadores do Projeto</h3>
+        
+        <!-- Listagem de participantes atuais -->
+        <div class="participantes-lista">
+            {% if participacoes %}
+                <table class="participantes-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Função</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for participacao in participacoes %}
+                        <tr>
+                            <td>{{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}</td>
+                            <td>{{ participacao.pesquisador.user.email }}</td>
+                            <td>{{ participacao.atividade }}</td>
+                            <td>
+                                <form method="post" action="{% url 'remover_pesquisador' projeto.sig_id_projeto participacao.id %}" class="form-inline" onsubmit="return confirm('Deseja remover este pesquisador do projeto?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-remover" title="Remover pesquisador">
+                                        <span>✕</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-participantes">Nenhum pesquisador adicionado ainda.</p>
+            {% endif %}
+        </div>
+
+        <!-- Formulário para adicionar novo participante -->
+        <div class="adicionar-participante">
+            <h4>Adicionar Pesquisador</h4>
+            <form method="post" action="{% url 'adicionar_pesquisador' projeto.sig_id_projeto %}" class="participacao-form">
+                {% csrf_token %}
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ participacao_form.pesquisador.id_for_label }}">{{ participacao_form.pesquisador.label }}</label>
+                        {{ participacao_form.pesquisador }}
+                        {% if participacao_form.pesquisador.errors %}
+                            <span class="error">{{ participacao_form.pesquisador.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ participacao_form.atividade.id_for_label }}">{{ participacao_form.atividade.label }}</label>
+                        {{ participacao_form.atividade }}
+                        {% if participacao_form.atividade.errors %}
+                            <span class="error">{{ participacao_form.atividade.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-adicionar">+ Adicionar Pesquisador</button>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
