@@ -136,12 +136,24 @@
                         <span>{{ projeto.data_aprovacao_inst|date:"d/m/Y"|default:"-" }}</span>
                     </div>
                     <div class="info-item">
+                        <strong>Trimestre da Aprovação Institucional:</strong>
+                        <span>{{ projeto.trimestre_aprovacao_inst }}</span>
+                    </div>
+                    <div class="info-item">
                         <strong>Parecer CEP:</strong>
                         <span>{{ projeto.parecer_cep|default:"-" }}</span>
                     </div>
                     <div class="info-item">
                         <strong>Data do Parecer CEP:</strong>
                         <span>{{ projeto.data_parecer_cep|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tempo entre Entrada no SIG e Aprovação Institucional:</strong>
+                        <span>{{ projeto.tempo_aprovacao_entrada_sig }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tempo entre Liberação para Análise e Aprovação Institucional:</strong>
+                        <span>{{ projeto.tempo_aprovacao_liberacao_analise }}</span>
                     </div>
                 </div>
             </div>

@@ -5,6 +5,24 @@ from .models import Projeto, Participacao
 from contas.models import Pesquisador
 from django import forms
 
+
+def _formatar_trimestre(data):
+    if not data:
+        return '-'
+
+    trimestre = ((data.month - 1) // 3) + 1
+    return f'{trimestre}o trimestre ({data.year})'
+
+
+def _formatar_duracao_em_dias(data_inicio, data_fim):
+    if not data_inicio or not data_fim:
+        return '-'
+
+    dias = (data_fim - data_inicio).days
+    if dias < 0:
+        return f'{abs(dias)} dias (ordem de datas invertida)'
+    return f'{dias} dias'
+
 class ProjetoForm(forms.ModelForm):
     class Meta:
         model = Projeto
@@ -55,6 +73,35 @@ class ProjetoForm(forms.ModelForm):
             'HUB_proponente': 'HUB Proponente',
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+
+        data_ent_sig = cleaned_data.get('data_ent_sig')
+        data_lib_analise = cleaned_data.get('data_lib_analise')
+        data_aprovacao_inst = cleaned_data.get('data_aprovacao_inst')
+        inicio_coleta = cleaned_data.get('inicio_coleta')
+
+        if data_ent_sig:
+            if data_lib_analise and data_lib_analise <= data_ent_sig:
+                self.add_error(
+                    'data_lib_analise',
+                    'A Data de Liberação para Análise deve ser posterior à Data de Entrada no SIG.',
+                )
+
+            if data_aprovacao_inst and data_aprovacao_inst <= data_ent_sig:
+                self.add_error(
+                    'data_aprovacao_inst',
+                    'A Data de Aprovação Institucional deve ser posterior à Data de Entrada no SIG.',
+                )
+
+            if inicio_coleta and inicio_coleta <= data_ent_sig:
+                self.add_error(
+                    'inicio_coleta',
+                    'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
+                )
+
+        return cleaned_data
+
 class ParticipacaoForm(forms.ModelForm):
     class Meta:
         model = Participacao
@@ -72,8 +119,10 @@ class ParticipacaoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if projeto:
             # Excluir pesquisadores que já participam do projeto
-            participantes_ids = projeto.participacao_set.values_list('pesquisador_id', flat=True)
-            self.fields['pesquisador'].queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+            participantes_ids = Participacao.objects.filter(projeto=projeto).values_list('pesquisador_id', flat=True)
+            pesquisador_field = self.fields.get('pesquisador')
+            if isinstance(pesquisador_field, forms.ModelChoiceField):
+                pesquisador_field.queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
 
 @login_required
 def lista_projetos(request):
@@ -90,6 +139,18 @@ def lista_projetos(request):
         except Pesquisador.DoesNotExist:
             # Se o usuário não é um pesquisador, não mostra nenhum projeto
             projetos = Projeto.objects.none()
+
+    projetos = list(projetos)
+    for projeto in projetos:
+        setattr(projeto, 'trimestre_aprovacao_inst', _formatar_trimestre(projeto.data_aprovacao_inst))
+        setattr(projeto, 'tempo_aprovacao_entrada_sig', _formatar_duracao_em_dias(
+            projeto.data_ent_sig,
+            projeto.data_aprovacao_inst,
+        ))
+        setattr(projeto, 'tempo_aprovacao_liberacao_analise', _formatar_duracao_em_dias(
+            projeto.data_lib_analise,
+            projeto.data_aprovacao_inst,
+        ))
     
     return render(request, 'projetos/lista_projetos.html', {'projetos': projetos})
 
@@ -140,7 +201,7 @@ def editar_projeto(request, projeto_id):
     participacao_form = ParticipacaoForm(projeto=projeto)
     
     # Lista de participantes atuais
-    participacoes = projeto.participacao_set.select_related('pesquisador__user').all()
+    participacoes = Participacao.objects.filter(projeto=projeto).select_related('pesquisador__user')
     
     context = {
         'form': form,
