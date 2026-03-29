@@ -8,13 +8,23 @@ class Unidade(models.Model):
         return self.nome_unidade
 
 class Projeto(models.Model):
+    PARECER_CEP_CHOICES = [
+        ('sim', 'Sim'),
+        ('na', 'N/A'),
+    ]
+    
+    TIPO_PESQ_CHOICES = [
+        ('com_seres_humanos', 'Envolve seres humanos'),
+        ('sem_seres_humanos', 'Não envolve seres humanos'),
+    ]
+    
     sig_id_projeto = models.CharField(max_length=100, primary_key=True)
     sig_id_pesq = models.CharField(max_length=100, blank=True, null=True)
     data_ent_sig = models.DateField(blank=True, null=True)
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
     class_inst = models.CharField(max_length=100, blank=True, null=True)
-    tipo_pesq = models.CharField(max_length=100, blank=True, null=True)
+    tipo_pesq = models.CharField(max_length=30, choices=TIPO_PESQ_CHOICES, blank=True, null=True)
     desenvolvimento_tecnologico = models.BooleanField(default=False)
     multicentrico = models.BooleanField(default=False)
     especialidade_proponente = models.CharField(max_length=100, blank=True, null=True)
@@ -22,7 +32,7 @@ class Projeto(models.Model):
     inicio_coleta = models.DateField(blank=True, null=True)
     fim_coleta = models.DateField(blank=True, null=True)
     data_aprovacao_inst = models.DateField(blank=True, null=True)
-    parecer_cep = models.CharField(max_length=100, blank=True, null=True)
+    parecer_cep = models.CharField(max_length=10, choices=PARECER_CEP_CHOICES, blank=True, null=True)
     data_parecer_cep = models.DateField(blank=True, null=True)
     papel_HUB_multi = models.CharField(max_length=100, blank=True, null=True)
     parceria_HUB_UNB = models.BooleanField(default=False)

@@ -78,7 +78,7 @@
                     </div>
                     <div class="info-item">
                         <strong>Tipo de Pesquisa:</strong>
-                        <span>{{ projeto.tipo_pesq|default:"-" }}</span>
+                        <span>{{ projeto.get_tipo_pesq_display|default:"-" }}</span>
                     </div>
                     <div class="info-item">
                         <strong>Especialidade do Proponente:</strong>
@@ -145,7 +145,7 @@
                     </div>
                     <div class="info-item">
                         <strong>Parecer CEP:</strong>
-                        <span>{{ projeto.parecer_cep|default:"-" }}</span>
+                        <span>{{ projeto.get_parecer_cep_display|default:"-" }}</span>
                     </div>
                     <div class="info-item">
                         <strong>Data do Parecer CEP:</strong>
