@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Projeto, Participacao
+from django.http import JsonResponse
+from .models import Projeto, Participacao, Unidade
 from contas.models import Pesquisador
 from django import forms
 
@@ -23,7 +24,34 @@ def _formatar_duracao_em_dias(data_inicio, data_fim):
         return f'{abs(dias)} dias (ordem de datas invertida)'
     return f'{dias} dias'
 
+class UnidadeForm(forms.ModelForm):
+    """Formulário para criar nova unidade"""
+    class Meta:
+        model = Unidade
+        fields = ['nome_unidade']
+        widgets = {
+            'nome_unidade': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Departamento de Pesquisa'
+            })
+        }
+        labels = {
+            'nome_unidade': 'Nome da Unidade'
+        }
+
+
 class ProjetoForm(forms.ModelForm):
+    unidade = forms.ModelChoiceField(
+        queryset=Unidade.objects.all().order_by('nome_unidade'),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_unidade_select'
+        }),
+        label='Unidade Organizacional',
+        empty_label="-- Selecionar unidade --"
+    )
+    
     class Meta:
         model = Projeto
         fields = [
@@ -106,9 +134,35 @@ class ProjetoForm(forms.ModelForm):
 
         return cleaned_data
 
+    def save(self, commit=True):
+        projeto = super().save(commit)
+        
+        # Processar unidade
+        unidade = self.cleaned_data.get('unidade')
+        if unidade:
+            projeto.unidades.add(unidade)
+        
+        return projeto
+        
+        if unidade:
+            projeto.unidades.add(unidade)
+        
+        return projeto
+
 
 class ProjetoEditForm(forms.ModelForm):
     """Formulário de edição de projeto - não permite alterar sig_id_projeto (chave primária)"""
+    unidade = forms.ModelChoiceField(
+        queryset=Unidade.objects.all().order_by('nome_unidade'),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_unidade_select'
+        }),
+        label='Unidade Organizacional',
+        empty_label="-- Selecionar unidade --"
+    )
+    
     class Meta:
         model = Projeto
         fields = [
@@ -189,6 +243,16 @@ class ProjetoEditForm(forms.ModelForm):
 
         return cleaned_data
 
+    def save(self, commit=True):
+        projeto = super().save(commit)
+        
+        # Processar unidade
+        unidade = self.cleaned_data.get('unidade')
+        if unidade:
+            projeto.unidades.add(unidade)
+        
+        return projeto
+
 
 class ParticipacaoForm(forms.ModelForm):
     class Meta:
@@ -211,6 +275,27 @@ class ParticipacaoForm(forms.ModelForm):
             pesquisador_field = self.fields.get('pesquisador')
             if isinstance(pesquisador_field, forms.ModelChoiceField):
                 pesquisador_field.queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+
+
+@login_required
+def criar_unidade_ajax(request):
+    """View AJAX para criar nova unidade"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_unidade', '').strip()
+        if nome:
+            unidade, created = Unidade.objects.get_or_create(nome_unidade=nome)
+            return JsonResponse({
+                'success': True,
+                'id': unidade.pk,
+                'nome': unidade.nome_unidade,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da unidade não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
 
 
 @login_required

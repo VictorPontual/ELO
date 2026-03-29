@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
+<link rel="stylesheet" href="{% static 'projetos/css/unidade_modal.css' %}">
 {% endblock %}
 
 {% block title %}Cadastro de Projeto - ELO{% endblock %}
@@ -83,6 +84,19 @@
                         <span class="error">{{ form.tipo_pesq.errors.0 }}</span>
                     {% endif %}
                 </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Unidade Organizacional</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.unidade.id_for_label }}">{{ form.unidade.label }}</label>
+                {{ form.unidade }}
+                {% if form.unidade.errors %}
+                    <span class="error">{{ form.unidade.errors.0 }}</span>
+                {% endif %}
+                <small class="form-text text-muted">Selecione uma unidade existente ou crie uma nova</small>
             </div>
         </div>
 
@@ -189,9 +203,30 @@
             <button type="submit" class="btn-salvar">Cadastrar Projeto</button>
         </div>
     </form>
+
+    <!-- Modal para criar nova unidade -->
+    <div id="modalCriarUnidade" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Unidade</h2>
+            <div class="form-group">
+                <label for="nomeUnidadeInput">Nome da Unidade *</label>
+                <input type="text" id="nomeUnidadeInput" placeholder="Ex: Departamento de Pesquisa" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarUnidade" class="btn-primary">Criar Unidade</button>
+                <button type="button" id="botaoCancelarUnidade" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'projetos/js/cadastro_projeto.js' %}"></script>
+<script src="{% static 'projetos/js/unidade_modal.js' %}"></script>
+<script>
+    // Passar a URL do endpoint AJAX para o JavaScript
+    window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
+</script>
 {% endblock %}
