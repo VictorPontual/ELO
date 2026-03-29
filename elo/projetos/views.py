@@ -27,7 +27,7 @@ class ProjetoForm(forms.ModelForm):
     class Meta:
         model = Projeto
         fields = [
-            'titulo', 'data_ent_sig', 'data_lib_analise', 'class_inst', 
+            'sig_id_projeto', 'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 'class_inst', 
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
             'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
@@ -35,6 +35,8 @@ class ProjetoForm(forms.ModelForm):
             'HUB_proponente'
         ]
         widgets = {
+            'sig_id_projeto': forms.TextInput(attrs={'class': 'form-control'}),
+            'sig_id_pesq': forms.TextInput(attrs={'class': 'form-control'}),
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'data_ent_sig': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_lib_analise': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -54,6 +56,8 @@ class ProjetoForm(forms.ModelForm):
             'HUB_proponente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
+            'sig_id_projeto': 'SIG ID do Projeto *',
+            'sig_id_pesq': 'SIG ID da Pesquisa',
             'titulo': 'Título do Projeto',
             'data_ent_sig': 'Data de Entrada no SIG',
             'data_lib_analise': 'Data de Liberação para Análise',
@@ -102,6 +106,90 @@ class ProjetoForm(forms.ModelForm):
 
         return cleaned_data
 
+
+class ProjetoEditForm(forms.ModelForm):
+    """Formulário de edição de projeto - não permite alterar sig_id_projeto (chave primária)"""
+    class Meta:
+        model = Projeto
+        fields = [
+            'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 'class_inst', 
+            'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
+            'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
+            'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
+            'data_parecer_cep', 'papel_HUB_multi', 'parceria_HUB_UNB',
+            'HUB_proponente'
+        ]
+        widgets = {
+            'sig_id_pesq': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_ent_sig': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_lib_analise': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'class_inst': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_pesq': forms.TextInput(attrs={'class': 'form-control'}),
+            'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'especialidade_proponente': forms.TextInput(attrs={'class': 'form-control'}),
+            'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_aprovacao_inst': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'parecer_cep': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_parecer_cep': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'papel_HUB_multi': forms.TextInput(attrs={'class': 'form-control'}),
+            'parceria_HUB_UNB': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'HUB_proponente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'sig_id_pesq': 'SIG ID da Pesquisa',
+            'titulo': 'Título do Projeto',
+            'data_ent_sig': 'Data de Entrada no SIG',
+            'data_lib_analise': 'Data de Liberação para Análise',
+            'class_inst': 'Classificação Institucional',
+            'tipo_pesq': 'Tipo de Pesquisa',
+            'desenvolvimento_tecnologico': 'Desenvolvimento Tecnológico',
+            'multicentrico': 'Multicêntrico',
+            'especialidade_proponente': 'Especialidade do Proponente',
+            'linhas_pesq': 'Linhas de Pesquisa',
+            'inicio_coleta': 'Início da Coleta',
+            'fim_coleta': 'Fim da Coleta',
+            'data_aprovacao_inst': 'Data de Aprovação Institucional',
+            'parecer_cep': 'Parecer CEP',
+            'data_parecer_cep': 'Data do Parecer CEP',
+            'papel_HUB_multi': 'Papel do HUB no Multicêntrico',
+            'parceria_HUB_UNB': 'Parceria HUB/UNB',
+            'HUB_proponente': 'HUB Proponente',
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        data_ent_sig = cleaned_data.get('data_ent_sig')
+        data_lib_analise = cleaned_data.get('data_lib_analise')
+        data_aprovacao_inst = cleaned_data.get('data_aprovacao_inst')
+        inicio_coleta = cleaned_data.get('inicio_coleta')
+
+        if data_ent_sig:
+            if data_lib_analise and data_lib_analise <= data_ent_sig:
+                self.add_error(
+                    'data_lib_analise',
+                    'A Data de Liberação para Análise deve ser posterior à Data de Entrada no SIG.',
+                )
+
+            if data_aprovacao_inst and data_aprovacao_inst <= data_ent_sig:
+                self.add_error(
+                    'data_aprovacao_inst',
+                    'A Data de Aprovação Institucional deve ser posterior à Data de Entrada no SIG.',
+                )
+
+            if inicio_coleta and inicio_coleta <= data_ent_sig:
+                self.add_error(
+                    'inicio_coleta',
+                    'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
+                )
+
+        return cleaned_data
+
+
 class ParticipacaoForm(forms.ModelForm):
     class Meta:
         model = Participacao
@@ -123,6 +211,7 @@ class ParticipacaoForm(forms.ModelForm):
             pesquisador_field = self.fields.get('pesquisador')
             if isinstance(pesquisador_field, forms.ModelChoiceField):
                 pesquisador_field.queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+
 
 @login_required
 def lista_projetos(request):
@@ -189,13 +278,13 @@ def editar_projeto(request, projeto_id):
     projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
     
     if request.method == 'POST':
-        form = ProjetoForm(request.POST, instance=projeto)
+        form = ProjetoEditForm(request.POST, instance=projeto)
         if form.is_valid():
             form.save()
             messages.success(request, 'Projeto atualizado com sucesso!')
             return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
     else:
-        form = ProjetoForm(instance=projeto)
+        form = ProjetoEditForm(instance=projeto)
     
     # Formulário para adicionar pesquisadores
     participacao_form = ParticipacaoForm(projeto=projeto)

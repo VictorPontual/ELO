@@ -26,6 +26,22 @@
             <h3>Informações Básicas</h3>
             
             <div class="form-group">
+                <label for="{{ form.sig_id_projeto.id_for_label }}">{{ form.sig_id_projeto.label }}</label>
+                {{ form.sig_id_projeto }}
+                {% if form.sig_id_projeto.errors %}
+                    <span class="error">{{ form.sig_id_projeto.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.sig_id_pesq.id_for_label }}">{{ form.sig_id_pesq.label }}</label>
+                {{ form.sig_id_pesq }}
+                {% if form.sig_id_pesq.errors %}
+                    <span class="error">{{ form.sig_id_pesq.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
                 <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }} *</label>
                 {{ form.titulo }}
                 {% if form.titulo.errors %}

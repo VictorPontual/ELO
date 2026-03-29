@@ -57,8 +57,12 @@
                 <h3>Informações Básicas</h3>
                 <div class="info-grid">
                     <div class="info-item">
-                        <strong>SIG ID:</strong>
+                        <strong>SIG ID Projeto:</strong>
                         <span>{{ projeto.sig_id_projeto }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>SIG ID Pesquisa:</strong>
+                        <span>{{ projeto.sig_id_pesq|default:"-" }}</span>
                     </div>
                     <div class="info-item">
                         <strong>Data de Entrada no SIG:</strong>

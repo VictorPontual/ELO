@@ -8,7 +8,8 @@ class Unidade(models.Model):
         return self.nome_unidade
 
 class Projeto(models.Model):
-    sig_id_projeto = models.AutoField(primary_key=True)
+    sig_id_projeto = models.CharField(max_length=100, primary_key=True)
+    sig_id_pesq = models.CharField(max_length=100, blank=True, null=True)
     data_ent_sig = models.DateField(blank=True, null=True)
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
@@ -33,16 +34,7 @@ class Projeto(models.Model):
     def __str__(self):
         return self.titulo
 
-class Pesquisa(models.Model):
-    projeto = models.OneToOneField(Projeto, on_delete=models.CASCADE, primary_key=True, related_name='pesquisa')
-    sig_id_pesq = models.CharField(max_length=100, blank=True, null=True) # Pode ser um campo único se necessário
-    pesq_status = models.CharField(max_length=100, blank=True, null=True)
-    relatorio_entrege = models.BooleanField(default=False)
-    pacientes_recrutados = models.IntegerField(default=0)
-    divulgacao_resultados = models.TextField(blank=True, null=True)
 
-    def __str__(self):
-        return f"Pesquisa do projeto: {self.projeto.titulo}"
 
 class Fomento(models.Model):
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='fomentos')
