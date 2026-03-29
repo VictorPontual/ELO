@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - ELO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <section class="dashboard-hero">
+        <div>
+            <p class="hero-eyebrow">Inteligencia de pesquisa</p>
+            <h2>Dashboard de Aprovacoes Institucionais</h2>
+            <p class="hero-subtitle">Uma visao consolidada dos projetos aprovados, distribuicao trimestral e perfis de pesquisa.</p>
+        </div>
+
+        <form method="get" class="dashboard-filter">
+            <label for="ano">Ano</label>
+            <select name="ano" id="ano" onchange="this.form.submit()">
+                {% for ano in anos_disponiveis %}
+                    <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </section>
+
+    <section class="kpi-grid">
+        <article class="kpi-card accent-cyan">
+            <p class="kpi-label">Aprovados no ano</p>
+            <h3>{{ kpis.total_aprovados }}</h3>
+            <p class="kpi-footnote">Projetos com aprovacao em {{ ano_selecionado }}</p>
+        </article>
+
+        <article class="kpi-card accent-green">
+            <p class="kpi-label">Aprovados no trimestre atual</p>
+            <h3>{{ kpis.aprovados_trimestre }}</h3>
+            <p class="kpi-footnote">Recorte trimestral em {{ ano_selecionado }}</p>
+        </article>
+
+        <article class="kpi-card accent-orange">
+            <p class="kpi-label">Estudos em andamento</p>
+            <h3>{{ kpis.estudos_andamento }}</h3>
+            <p class="kpi-footnote">Coleta iniciada e sem encerramento</p>
+        </article>
+
+        <article class="kpi-card accent-slate">
+            <p class="kpi-label">Variacao vs {{ kpis.ano_comparacao }}</p>
+            {% if kpis.variacao_percentual is not None %}
+                <h3>{% if kpis.variacao_percentual > 0 %}+{% endif %}{{ kpis.variacao_percentual }}%</h3>
+                <p class="kpi-footnote">Comparacao anual de aprovacoes</p>
+            {% else %}
+                <h3>-</h3>
+                <p class="kpi-footnote">Sem base comparativa no ano anterior</p>
+            {% endif %}
+        </article>
+    </section>
+
+    <section class="chart-grid chart-grid-main">
+        <article class="chart-card">
+            <header>
+                <h3>Tendencia anual</h3>
+                <p>Volume de projetos aprovados por ano</p>
+            </header>
+            <canvas id="chartAnual"></canvas>
+        </article>
+
+        <article class="chart-card">
+            <header>
+                <h3>Distribuicao trimestral ({{ ano_selecionado }})</h3>
+                <p>Aprovacoes por trimestre</p>
+            </header>
+            <canvas id="chartTrimestral"></canvas>
+        </article>
+    </section>
+
+    <section class="chart-grid chart-grid-secondary">
+        <article class="chart-card">
+            <header>
+                <h3>Tipo de pesquisa</h3>
+                <p>Top categorias por aprovacao</p>
+            </header>
+            <canvas id="chartTipo"></canvas>
+        </article>
+
+        <article class="chart-card">
+            <header>
+                <h3>Classificacao institucional</h3>
+                <p>Distribuicao por classificacao</p>
+            </header>
+            <canvas id="chartClassificacao"></canvas>
+        </article>
+    </section>
+
+    <section class="chart-grid chart-grid-boolean">
+        <article class="mini-card">
+            <h3>Desenvolvimento tecnologico</h3>
+            <canvas id="chartTecnologico"></canvas>
+        </article>
+
+        <article class="mini-card">
+            <h3>Multicentrico</h3>
+            <canvas id="chartMulticentrico"></canvas>
+        </article>
+
+        <article class="mini-card">
+            <h3>Integracao UNB-HUB</h3>
+            <canvas id="chartIntegracao"></canvas>
+        </article>
+    </section>
+
+    <section class="table-card">
+        <header>
+            <h3>Linhas de pesquisa com mais aprovacoes</h3>
+            <p>Top 10 linhas no recorte de {{ ano_selecionado }}</p>
+        </header>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Linha de pesquisa</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in tabela_linhas %}
+                        <tr>
+                            <td>{{ item.linha }}</td>
+                            <td>{{ item.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">Sem dados de linhas de pesquisa para o periodo selecionado.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+{{ charts|json_script:"dashboard-charts-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+{% endblock %}

@@ -6,13 +6,12 @@
 {% endblock %}
 
 {% block content %}
-<h2>Cadastro</h2>
+<h2>Cadastro de Pesquisador</h2>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">Cadastrar</button>
 </form>
-<p>Já tem uma conta? <a href="{% url 'login' %}">Faça login aqui</a></p>
 {% endblock %}
 
 {% block extra_js %}
