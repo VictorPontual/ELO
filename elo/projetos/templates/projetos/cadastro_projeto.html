@@ -68,27 +68,25 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="{{ form.class_inst.id_for_label }}">{{ form.class_inst.label }}</label>
-                    {{ form.class_inst }}
-                    {% if form.class_inst.errors %}
-                        <span class="error">{{ form.class_inst.errors.0 }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.tipo_pesq.id_for_label }}">{{ form.tipo_pesq.label }}</label>
-                    {{ form.tipo_pesq }}
-                    {% if form.tipo_pesq.errors %}
-                        <span class="error">{{ form.tipo_pesq.errors.0 }}</span>
-                    {% endif %}
-                </div>
+            <div class="form-group">
+                <label for="{{ form.tipo_pesq.id_for_label }}">{{ form.tipo_pesq.label }}</label>
+                {{ form.tipo_pesq }}
+                {% if form.tipo_pesq.errors %}
+                    <span class="error">{{ form.tipo_pesq.errors.0 }}</span>
+                {% endif %}
             </div>
         </div>
 
         <div class="form-section">
-            <h3>Unidade Organizacional</h3>
+            <h3>Classificação e Unidade Organizacional</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.classificacao.id_for_label }}">{{ form.classificacao.label }}</label>
+                {{ form.classificacao }}
+                {% if form.classificacao.errors %}
+                    <span class="error">{{ form.classificacao.errors.0 }}</span>
+                {% endif %}
+            </div>
             
             <div class="form-group">
                 <label for="{{ form.unidade.id_for_label }}">{{ form.unidade.label }}</label>
@@ -96,7 +94,6 @@
                 {% if form.unidade.errors %}
                     <span class="error">{{ form.unidade.errors.0 }}</span>
                 {% endif %}
-                <small class="form-text text-muted">Selecione uma unidade existente ou crie uma nova</small>
             </div>
         </div>
 
@@ -219,6 +216,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para criar nova classificação -->
+    <div id="modalCriarClassificacao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Classificação</h2>
+            <div class="form-group">
+                <label for="nomeClassificacaoInput">Nome da Classificação *</label>
+                <input type="text" id="nomeClassificacaoInput" placeholder="Ex: Pesquisa Científica" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarClassificacao" class="btn-primary">Criar Classificação</button>
+                <button type="button" id="botaoCancelarClassificacao" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -226,7 +239,8 @@
 <script src="{% static 'projetos/js/cadastro_projeto.js' %}"></script>
 <script src="{% static 'projetos/js/unidade_modal.js' %}"></script>
 <script>
-    // Passar a URL do endpoint AJAX para o JavaScript
+    // Passar URLs dos endpoints AJAX para o JavaScript
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
+    window.urlCriarClassificacao = "{% url 'criar_classificacao_ajax' %}";
 </script>
 {% endblock %}

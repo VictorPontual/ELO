@@ -7,6 +7,16 @@ class Unidade(models.Model):
     def __str__(self):
         return self.nome_unidade
 
+class ClassificacaoInstitucional(models.Model):
+    nome_classificacao = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_classificacao
+    
+    class Meta:
+        verbose_name = 'Classificação Institucional'
+        verbose_name_plural = 'Classificações Institucionais'
+
 class Projeto(models.Model):
     PARECER_CEP_CHOICES = [
         ('sim', 'Sim'),
@@ -23,7 +33,6 @@ class Projeto(models.Model):
     data_ent_sig = models.DateField(blank=True, null=True)
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
-    class_inst = models.CharField(max_length=100, blank=True, null=True)
     tipo_pesq = models.CharField(max_length=30, choices=TIPO_PESQ_CHOICES, blank=True, null=True)
     desenvolvimento_tecnologico = models.BooleanField(default=False)
     multicentrico = models.BooleanField(default=False)
@@ -40,6 +49,7 @@ class Projeto(models.Model):
     
     pesquisadores = models.ManyToManyField(Pesquisador, through='Participacao')
     unidades = models.ManyToManyField(Unidade, through='Envolve')
+    classificacoes = models.ManyToManyField(ClassificacaoInstitucional, blank=True)
 
     def __str__(self):
         return self.titulo

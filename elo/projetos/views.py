@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional
 from contas.models import Pesquisador
 from django import forms
 
@@ -52,10 +52,21 @@ class ProjetoForm(forms.ModelForm):
         empty_label="-- Selecionar unidade --"
     )
     
+    classificacao = forms.ModelChoiceField(
+        queryset=ClassificacaoInstitucional.objects.all().order_by('nome_classificacao'),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_classificacao_select'
+        }),
+        label='Classificação Institucional',
+        empty_label="-- Selecionar classificação --"
+    )
+    
     class Meta:
         model = Projeto
         fields = [
-            'sig_id_projeto', 'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 'class_inst', 
+            'sig_id_projeto', 'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
             'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
@@ -68,7 +79,6 @@ class ProjetoForm(forms.ModelForm):
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'data_ent_sig': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_lib_analise': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'class_inst': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_pesq': forms.Select(attrs={'class': 'form-control'}),
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -89,7 +99,6 @@ class ProjetoForm(forms.ModelForm):
             'titulo': 'Título do Projeto',
             'data_ent_sig': 'Data de Entrada no SIG',
             'data_lib_analise': 'Data de Liberação para Análise',
-            'class_inst': 'Classificação Institucional',
             'tipo_pesq': 'Tipo de Pesquisa',
             'desenvolvimento_tecnologico': 'Desenvolvimento Tecnológico',
             'multicentrico': 'Multicêntrico',
@@ -142,10 +151,10 @@ class ProjetoForm(forms.ModelForm):
         if unidade:
             projeto.unidades.add(unidade)
         
-        return projeto
-        
-        if unidade:
-            projeto.unidades.add(unidade)
+        # Processar classificação
+        classificacao = self.cleaned_data.get('classificacao')
+        if classificacao:
+            projeto.classificacoes.add(classificacao)
         
         return projeto
 
@@ -163,10 +172,21 @@ class ProjetoEditForm(forms.ModelForm):
         empty_label="-- Selecionar unidade --"
     )
     
+    classificacao = forms.ModelChoiceField(
+        queryset=ClassificacaoInstitucional.objects.all().order_by('nome_classificacao'),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_classificacao_select'
+        }),
+        label='Classificação Institucional',
+        empty_label="-- Selecionar classificação --"
+    )
+    
     class Meta:
         model = Projeto
         fields = [
-            'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 'class_inst', 
+            'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise',
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
             'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
@@ -178,7 +198,6 @@ class ProjetoEditForm(forms.ModelForm):
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'data_ent_sig': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_lib_analise': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'class_inst': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_pesq': forms.Select(attrs={'class': 'form-control'}),
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -198,7 +217,6 @@ class ProjetoEditForm(forms.ModelForm):
             'titulo': 'Título do Projeto',
             'data_ent_sig': 'Data de Entrada no SIG',
             'data_lib_analise': 'Data de Liberação para Análise',
-            'class_inst': 'Classificação Institucional',
             'tipo_pesq': 'Tipo de Pesquisa',
             'desenvolvimento_tecnologico': 'Desenvolvimento Tecnológico',
             'multicentrico': 'Multicêntrico',
@@ -250,6 +268,11 @@ class ProjetoEditForm(forms.ModelForm):
         unidade = self.cleaned_data.get('unidade')
         if unidade:
             projeto.unidades.add(unidade)
+        
+        # Processar classificação
+        classificacao = self.cleaned_data.get('classificacao')
+        if classificacao:
+            projeto.classificacoes.add(classificacao)
         
         return projeto
 
@@ -294,6 +317,27 @@ def criar_unidade_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome da unidade não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_classificacao_ajax(request):
+    """View AJAX para criar nova classificação institucional"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_classificacao', '').strip()
+        if nome:
+            classificacao, created = ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
+            return JsonResponse({
+                'success': True,
+                'id': classificacao.pk,
+                'nome': classificacao.nome_classificacao,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da classificação não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
