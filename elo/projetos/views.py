@@ -2,9 +2,36 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa
 from contas.models import Pesquisador
 from django import forms
+
+
+TIPOS_PESQUISA_INICIAIS = [
+    'Graduação (IC, PIT, TC)',
+    'Pós Graduação latu senso (especialização e residência)',
+    'Pós Graduação strictu senso (mestrado, doutorado e pós doc)',
+    'Iniciativa de colaboradores',
+    'Iniciativa de docentes',
+    'pesquisa clínica patrocinada',
+    'outros',
+]
+
+CLASSIFICACOES_INSTITUCIONAIS_FIXAS = [
+    'Pesquisa com seres humanos SEM intervenção',
+    'Pesquisa com seres humanos COM intervenção',
+    'Pesquisa QUE NÃO ENVOLVE seres humanos',
+]
+
+
+def _garantir_tipos_pesquisa_iniciais():
+    for nome in TIPOS_PESQUISA_INICIAIS:
+        TipoPesquisa.objects.get_or_create(nome_tipo=nome)
+
+
+def _garantir_classificacoes_fixas():
+    for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS:
+        ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
 
 
 def _formatar_trimestre(data):
@@ -41,6 +68,17 @@ class UnidadeForm(forms.ModelForm):
 
 
 class ProjetoForm(forms.ModelForm):
+    tipo_pesq = forms.ModelChoiceField(
+        queryset=TipoPesquisa.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_tipo_pesq_select'
+        }),
+        label='Tipo de Pesquisa',
+        empty_label='-- Selecionar tipo --'
+    )
+
     unidade = forms.ModelChoiceField(
         queryset=Unidade.objects.all().order_by('nome_unidade'),
         required=False,
@@ -52,15 +90,16 @@ class ProjetoForm(forms.ModelForm):
         empty_label="-- Selecionar unidade --"
     )
     
-    classificacao = forms.ModelChoiceField(
-        queryset=ClassificacaoInstitucional.objects.all().order_by('nome_classificacao'),
+    classificacao = forms.ChoiceField(
+        choices=[('', '-- Selecionar classificação --')] + [
+            (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
+        ],
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'id_classificacao_select'
         }),
-        label='Classificação Institucional',
-        empty_label="-- Selecionar classificação --"
+        label='Classificação Institucional'
     )
     
     class Meta:
@@ -114,6 +153,22 @@ class ProjetoForm(forms.ModelForm):
             'HUB_proponente': 'HUB Proponente',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _garantir_tipos_pesquisa_iniciais()
+        _garantir_classificacoes_fixas()
+        self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+
+        tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
+        if tipo_pesq_atual:
+            tipo_obj, _ = TipoPesquisa.objects.get_or_create(nome_tipo=tipo_pesq_atual)
+            self.initial['tipo_pesq'] = tipo_obj
+
+        if self.instance and self.instance.pk:
+            classificacao_atual = self.instance.classificacoes.first()
+            if classificacao_atual:
+                self.initial['classificacao'] = classificacao_atual.nome_classificacao
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -144,7 +199,13 @@ class ProjetoForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        projeto = super().save(commit)
+        projeto = super().save(commit=False)
+
+        tipo_pesq = self.cleaned_data.get('tipo_pesq')
+        projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
+
+        if commit:
+            projeto.save()
         
         # Processar unidade
         unidade = self.cleaned_data.get('unidade')
@@ -152,8 +213,12 @@ class ProjetoForm(forms.ModelForm):
             projeto.unidades.add(unidade)
         
         # Processar classificação
-        classificacao = self.cleaned_data.get('classificacao')
-        if classificacao:
+        classificacao_nome = self.cleaned_data.get('classificacao')
+        projeto.classificacoes.clear()
+        if classificacao_nome:
+            classificacao, _ = ClassificacaoInstitucional.objects.get_or_create(
+                nome_classificacao=classificacao_nome
+            )
             projeto.classificacoes.add(classificacao)
         
         return projeto
@@ -161,6 +226,17 @@ class ProjetoForm(forms.ModelForm):
 
 class ProjetoEditForm(forms.ModelForm):
     """Formulário de edição de projeto - não permite alterar sig_id_projeto (chave primária)"""
+    tipo_pesq = forms.ModelChoiceField(
+        queryset=TipoPesquisa.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_tipo_pesq_select'
+        }),
+        label='Tipo de Pesquisa',
+        empty_label='-- Selecionar tipo --'
+    )
+
     unidade = forms.ModelChoiceField(
         queryset=Unidade.objects.all().order_by('nome_unidade'),
         required=False,
@@ -172,15 +248,16 @@ class ProjetoEditForm(forms.ModelForm):
         empty_label="-- Selecionar unidade --"
     )
     
-    classificacao = forms.ModelChoiceField(
-        queryset=ClassificacaoInstitucional.objects.all().order_by('nome_classificacao'),
+    classificacao = forms.ChoiceField(
+        choices=[('', '-- Selecionar classificação --')] + [
+            (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
+        ],
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'id_classificacao_select'
         }),
-        label='Classificação Institucional',
-        empty_label="-- Selecionar classificação --"
+        label='Classificação Institucional'
     )
     
     class Meta:
@@ -232,6 +309,22 @@ class ProjetoEditForm(forms.ModelForm):
             'HUB_proponente': 'HUB Proponente',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _garantir_tipos_pesquisa_iniciais()
+        _garantir_classificacoes_fixas()
+        self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+
+        tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
+        if tipo_pesq_atual:
+            tipo_obj, _ = TipoPesquisa.objects.get_or_create(nome_tipo=tipo_pesq_atual)
+            self.initial['tipo_pesq'] = tipo_obj
+
+        if self.instance and self.instance.pk:
+            classificacao_atual = self.instance.classificacoes.first()
+            if classificacao_atual:
+                self.initial['classificacao'] = classificacao_atual.nome_classificacao
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -262,7 +355,13 @@ class ProjetoEditForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        projeto = super().save(commit)
+        projeto = super().save(commit=False)
+
+        tipo_pesq = self.cleaned_data.get('tipo_pesq')
+        projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
+
+        if commit:
+            projeto.save()
         
         # Processar unidade
         unidade = self.cleaned_data.get('unidade')
@@ -270,8 +369,12 @@ class ProjetoEditForm(forms.ModelForm):
             projeto.unidades.add(unidade)
         
         # Processar classificação
-        classificacao = self.cleaned_data.get('classificacao')
-        if classificacao:
+        classificacao_nome = self.cleaned_data.get('classificacao')
+        projeto.classificacoes.clear()
+        if classificacao_nome:
+            classificacao, _ = ClassificacaoInstitucional.objects.get_or_create(
+                nome_classificacao=classificacao_nome
+            )
             projeto.classificacoes.add(classificacao)
         
         return projeto
@@ -338,6 +441,27 @@ def criar_classificacao_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome da classificação não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_tipo_pesquisa_ajax(request):
+    """View AJAX para criar novo tipo de pesquisa"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_tipo', '').strip()
+        if nome:
+            tipo, created = TipoPesquisa.objects.get_or_create(nome_tipo=nome)
+            return JsonResponse({
+                'success': True,
+                'id': tipo.pk,
+                'nome': tipo.nome_tipo,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome do tipo de pesquisa não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 

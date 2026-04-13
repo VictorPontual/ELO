@@ -1,7 +1,7 @@
-// Modal para criar nova unidade e classificação
+// Modal para criar nova unidade e tipo de pesquisa
 document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('unidade', 'modalCriarUnidade', 'id_unidade_select', 'nomeUnidadeInput', 'botaoCriarUnidade', 'botaoCancelarUnidade');
-    setupDropdownModal('classificacao', 'modalCriarClassificacao', 'id_classificacao_select', 'nomeClassificacaoInput', 'botaoCriarClassificacao', 'botaoCancelarClassificacao');
+    setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
 });
 
 function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelButtonId) {
@@ -15,7 +15,11 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
     // Adicionar opção "Criar Nova"
     const optionCriarNova = document.createElement('option');
     optionCriarNova.value = newOptionValue;
-    optionCriarNova.textContent = type === 'unidade' ? '+ Nova Unidade' : '+ Nova Classificação';
+    const labels = {
+        unidade: '+ Nova Unidade',
+        tipo_pesquisa: '+ Novo Tipo de Pesquisa'
+    };
+    optionCriarNova.textContent = labels[type] || '+ Nova Opção';
     optionCriarNova.style.fontWeight = 'bold';
     optionCriarNova.style.color = '#0066cc';
     
@@ -86,8 +90,13 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     const input = document.getElementById(inputId);
     const nome = input.value.trim();
     
+    const nomes = {
+        unidade: 'unidade',
+        tipo_pesquisa: 'tipo de pesquisa'
+    };
+
     if (!nome) {
-        alert(`Por favor, digite o nome da ${type === 'unidade' ? 'unidade' : 'classificação'}`);
+        alert(`Por favor, digite o nome da ${nomes[type] || 'opção'}`);
         return;
     }
     
@@ -100,13 +109,15 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     botao.textContent = 'Criando...';
     
     // Determinar endpoint e parâmetro baseado no tipo
-    let endpoint, paramName;
+    let endpoint, paramName, textoBotao;
     if (type === 'unidade') {
         endpoint = window.urlCriarUnidade;
         paramName = 'nome_unidade';
+        textoBotao = 'Criar Unidade';
     } else {
-        endpoint = window.urlCriarClassificacao;
-        paramName = 'nome_classificacao';
+        endpoint = window.urlCriarTipoPesquisa;
+        paramName = 'nome_tipo';
+        textoBotao = 'Criar Tipo de Pesquisa';
     }
     
     const params = new URLSearchParams();
@@ -137,9 +148,13 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
             input.value = '';
             
             // Feedback ao usuário
-            alert(`${type === 'unidade' ? 'Unidade' : 'Classificação'} criada com sucesso!`);
+            const sucesso = {
+                unidade: 'Unidade criada com sucesso!',
+                tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!'
+            };
+            alert(sucesso[type] || 'Opção criada com sucesso!');
         } else {
-            alert(`Erro ao criar ${type === 'unidade' ? 'unidade' : 'classificação'}: ` + (data.error || 'Tente novamente'));
+            alert(`Erro ao criar ${nomes[type] || 'opção'}: ` + (data.error || 'Tente novamente'));
         }
     })
     .catch(error => {
@@ -148,6 +163,6 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     })
     .finally(() => {
         botao.disabled = false;
-        botao.textContent = type === 'unidade' ? 'Criar Unidade' : 'Criar Classificação';
+        botao.textContent = textoBotao;
     });
 }

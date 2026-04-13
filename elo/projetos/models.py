@@ -17,15 +17,21 @@ class ClassificacaoInstitucional(models.Model):
         verbose_name = 'Classificação Institucional'
         verbose_name_plural = 'Classificações Institucionais'
 
+
+class TipoPesquisa(models.Model):
+    nome_tipo = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_tipo
+
+    class Meta:
+        verbose_name = 'Tipo de Pesquisa'
+        verbose_name_plural = 'Tipos de Pesquisa'
+
 class Projeto(models.Model):
     PARECER_CEP_CHOICES = [
         ('sim', 'Sim'),
         ('na', 'N/A'),
-    ]
-    
-    TIPO_PESQ_CHOICES = [
-        ('com_seres_humanos', 'Envolve seres humanos'),
-        ('sem_seres_humanos', 'Não envolve seres humanos'),
     ]
     
     sig_id_projeto = models.CharField(max_length=100, primary_key=True)
@@ -33,7 +39,7 @@ class Projeto(models.Model):
     data_ent_sig = models.DateField(blank=True, null=True)
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
-    tipo_pesq = models.CharField(max_length=30, choices=TIPO_PESQ_CHOICES, blank=True, null=True)
+    tipo_pesq = models.CharField(max_length=255, blank=True, null=True)
     desenvolvimento_tecnologico = models.BooleanField(default=False)
     multicentrico = models.BooleanField(default=False)
     especialidade_proponente = models.CharField(max_length=100, blank=True, null=True)

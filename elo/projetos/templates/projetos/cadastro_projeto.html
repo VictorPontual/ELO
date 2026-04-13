@@ -74,6 +74,7 @@
                 {% if form.tipo_pesq.errors %}
                     <span class="error">{{ form.tipo_pesq.errors.0 }}</span>
                 {% endif %}
+                <small class="form-text text-muted">Selecione um tipo existente ou crie um novo</small>
             </div>
         </div>
 
@@ -86,6 +87,7 @@
                 {% if form.classificacao.errors %}
                     <span class="error">{{ form.classificacao.errors.0 }}</span>
                 {% endif %}
+                    <small class="form-text text-muted">Selecione uma das classificações institucionais disponíveis</small>
             </div>
             
             <div class="form-group">
@@ -217,18 +219,18 @@
         </div>
     </div>
 
-    <!-- Modal para criar nova classificação -->
-    <div id="modalCriarClassificacao" class="modal">
+    <!-- Modal para criar novo tipo de pesquisa -->
+    <div id="modalCriarTipoPesquisa" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Criar Nova Classificação</h2>
+            <h2>Criar Novo Tipo de Pesquisa</h2>
             <div class="form-group">
-                <label for="nomeClassificacaoInput">Nome da Classificação *</label>
-                <input type="text" id="nomeClassificacaoInput" placeholder="Ex: Pesquisa Científica" autocomplete="off">
+                <label for="nomeTipoPesquisaInput">Nome do Tipo de Pesquisa *</label>
+                <input type="text" id="nomeTipoPesquisaInput" placeholder="Ex: Estudo observacional" autocomplete="off">
             </div>
             <div class="modal-buttons">
-                <button type="button" id="botaoCriarClassificacao" class="btn-primary">Criar Classificação</button>
-                <button type="button" id="botaoCancelarClassificacao" class="btn-secondary">Cancelar</button>
+                <button type="button" id="botaoCriarTipoPesquisa" class="btn-primary">Criar Tipo de Pesquisa</button>
+                <button type="button" id="botaoCancelarTipoPesquisa" class="btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>
@@ -241,6 +243,6 @@
 <script>
     // Passar URLs dos endpoints AJAX para o JavaScript
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
-    window.urlCriarClassificacao = "{% url 'criar_classificacao_ajax' %}";
+    window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
 </script>
 {% endblock %}
