@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente
 from contas.models import Pesquisador
 from django import forms
 
@@ -14,6 +14,66 @@ TIPOS_PESQUISA_INICIAIS = [
     'Iniciativa de colaboradores',
     'Iniciativa de docentes',
     'pesquisa clínica patrocinada',
+    'outros',
+]
+
+ESPECIALIDADES_PROPONENTE_INICIAIS = [
+    'Anestesiologia',
+    'Arquivologia',
+    'Biblioteconomia',
+    'Cardiologia',
+    'Ciências biológicas',
+    'Cirurgia do aparelho digestivo',
+    'Cirurgia geral',
+    'Cirurgia oncológica',
+    'Cirurgia pediátrica',
+    'Cirurgia vascular',
+    'Cirurgia videolaparoscópica',
+    'Clínica médica',
+    'Coloproctologia',
+    'Dermatologia',
+    'Doenças infecto parasitárias',
+    'Endocrinologia',
+    'Endocrinologia pediátrica',
+    'Enfermagem',
+    'Engenharia de energia ciência de dados',
+    'Epidemiologia-saúde coletiva',
+    'Farmácia',
+    'Fisioterapia',
+    'Gastroenterologia',
+    'Geriatria',
+    'Ginecologia',
+    'Hepatologia',
+    'Infectologia',
+    'Mastologia',
+    'Medicina',
+    'Medicina intensiva',
+    'Medicina Tropical',
+    'Microbiologia',
+    'Nefrologia',
+    'Neurologia',
+    'Nutrição',
+    'Obstetrícia',
+    'Odontologia',
+    'Oftalmologia',
+    'Onco-hematologia',
+    'Oncologia clínica',
+    'Otorrinolaringologia',
+    'Patologia',
+    'Pedagogia',
+    'Pediatria',
+    'Pneumologia',
+    'Processamento de dados',
+    'Psicologia',
+    'Psiquiatria',
+    'Radiologia',
+    'Radioterapia',
+    'Reumatologia',
+    'Saúde coletiva',
+    'Serviço social',
+    'Terapia ocupacional',
+    'Transplante',
+    'Urologia',
     'outros',
 ]
 
@@ -32,6 +92,11 @@ def _garantir_tipos_pesquisa_iniciais():
 def _garantir_classificacoes_fixas():
     for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS:
         ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
+
+
+def _garantir_especialidades_iniciais():
+    for nome in ESPECIALIDADES_PROPONENTE_INICIAIS:
+        EspecialidadeProponente.objects.get_or_create(nome_especialidade=nome)
 
 
 def _formatar_trimestre(data):
@@ -101,6 +166,17 @@ class ProjetoForm(forms.ModelForm):
         }),
         label='Classificação Institucional'
     )
+
+    especialidade_proponente = forms.ModelChoiceField(
+        queryset=EspecialidadeProponente.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_especialidade_select'
+        }),
+        label='Especialidade do Proponente',
+        empty_label='-- Selecionar especialidade --'
+    )
     
     class Meta:
         model = Projeto
@@ -121,7 +197,7 @@ class ProjetoForm(forms.ModelForm):
             'tipo_pesq': forms.Select(attrs={'class': 'form-control'}),
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'especialidade_proponente': forms.TextInput(attrs={'class': 'form-control'}),
+            'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -157,7 +233,9 @@ class ProjetoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _garantir_tipos_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
+        _garantir_especialidades_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
 
         tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
         if tipo_pesq_atual:
@@ -168,6 +246,11 @@ class ProjetoForm(forms.ModelForm):
             classificacao_atual = self.instance.classificacoes.first()
             if classificacao_atual:
                 self.initial['classificacao'] = classificacao_atual.nome_classificacao
+
+        especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
+        if especialidade_atual:
+            especialidade_obj, _ = EspecialidadeProponente.objects.get_or_create(nome_especialidade=especialidade_atual)
+            self.initial['especialidade_proponente'] = especialidade_obj
 
     def clean(self):
         cleaned_data = super().clean()
@@ -203,6 +286,9 @@ class ProjetoForm(forms.ModelForm):
 
         tipo_pesq = self.cleaned_data.get('tipo_pesq')
         projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
+
+        especialidade = self.cleaned_data.get('especialidade_proponente')
+        projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
 
         if commit:
             projeto.save()
@@ -259,6 +345,17 @@ class ProjetoEditForm(forms.ModelForm):
         }),
         label='Classificação Institucional'
     )
+
+    especialidade_proponente = forms.ModelChoiceField(
+        queryset=EspecialidadeProponente.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_especialidade_select'
+        }),
+        label='Especialidade do Proponente',
+        empty_label='-- Selecionar especialidade --'
+    )
     
     class Meta:
         model = Projeto
@@ -278,7 +375,7 @@ class ProjetoEditForm(forms.ModelForm):
             'tipo_pesq': forms.Select(attrs={'class': 'form-control'}),
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'especialidade_proponente': forms.TextInput(attrs={'class': 'form-control'}),
+            'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -313,7 +410,9 @@ class ProjetoEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _garantir_tipos_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
+        _garantir_especialidades_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
 
         tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
         if tipo_pesq_atual:
@@ -324,6 +423,11 @@ class ProjetoEditForm(forms.ModelForm):
             classificacao_atual = self.instance.classificacoes.first()
             if classificacao_atual:
                 self.initial['classificacao'] = classificacao_atual.nome_classificacao
+
+        especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
+        if especialidade_atual:
+            especialidade_obj, _ = EspecialidadeProponente.objects.get_or_create(nome_especialidade=especialidade_atual)
+            self.initial['especialidade_proponente'] = especialidade_obj
 
     def clean(self):
         cleaned_data = super().clean()
@@ -359,6 +463,9 @@ class ProjetoEditForm(forms.ModelForm):
 
         tipo_pesq = self.cleaned_data.get('tipo_pesq')
         projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
+
+        especialidade = self.cleaned_data.get('especialidade_proponente')
+        projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
 
         if commit:
             projeto.save()
@@ -462,6 +569,27 @@ def criar_tipo_pesquisa_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome do tipo de pesquisa não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_especialidade_ajax(request):
+    """View AJAX para criar nova especialidade do proponente"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_especialidade', '').strip()
+        if nome:
+            especialidade, created = EspecialidadeProponente.objects.get_or_create(nome_especialidade=nome)
+            return JsonResponse({
+                'success': True,
+                'id': especialidade.pk,
+                'nome': especialidade.nome_especialidade,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da especialidade não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 

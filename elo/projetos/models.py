@@ -28,12 +28,23 @@ class TipoPesquisa(models.Model):
         verbose_name = 'Tipo de Pesquisa'
         verbose_name_plural = 'Tipos de Pesquisa'
 
+
+class EspecialidadeProponente(models.Model):
+    nome_especialidade = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_especialidade
+
+    class Meta:
+        verbose_name = 'Especialidade do Proponente'
+        verbose_name_plural = 'Especialidades do Proponente'
+
 class Projeto(models.Model):
     PARECER_CEP_CHOICES = [
         ('sim', 'Sim'),
         ('na', 'N/A'),
     ]
-    
+
     sig_id_projeto = models.CharField(max_length=100, primary_key=True)
     sig_id_pesq = models.CharField(max_length=100, blank=True, null=True)
     data_ent_sig = models.DateField(blank=True, null=True)
@@ -42,7 +53,7 @@ class Projeto(models.Model):
     tipo_pesq = models.CharField(max_length=255, blank=True, null=True)
     desenvolvimento_tecnologico = models.BooleanField(default=False)
     multicentrico = models.BooleanField(default=False)
-    especialidade_proponente = models.CharField(max_length=100, blank=True, null=True)
+    especialidade_proponente = models.CharField(max_length=255, blank=True, null=True)
     linhas_pesq = models.TextField(blank=True, null=True)
     inicio_coleta = models.DateField(blank=True, null=True)
     fim_coleta = models.DateField(blank=True, null=True)

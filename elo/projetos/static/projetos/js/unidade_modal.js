@@ -1,7 +1,8 @@
-// Modal para criar nova unidade e tipo de pesquisa
+// Modal para criar nova unidade, tipo de pesquisa e especialidade
 document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('unidade', 'modalCriarUnidade', 'id_unidade_select', 'nomeUnidadeInput', 'botaoCriarUnidade', 'botaoCancelarUnidade');
     setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
+    setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
 });
 
 function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelButtonId) {
@@ -17,7 +18,8 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
     optionCriarNova.value = newOptionValue;
     const labels = {
         unidade: '+ Nova Unidade',
-        tipo_pesquisa: '+ Novo Tipo de Pesquisa'
+        tipo_pesquisa: '+ Novo Tipo de Pesquisa',
+        especialidade: '+ Nova Especialidade'
     };
     optionCriarNova.textContent = labels[type] || '+ Nova Opção';
     optionCriarNova.style.fontWeight = 'bold';
@@ -92,7 +94,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     
     const nomes = {
         unidade: 'unidade',
-        tipo_pesquisa: 'tipo de pesquisa'
+        tipo_pesquisa: 'tipo de pesquisa',
+        especialidade: 'especialidade'
     };
 
     if (!nome) {
@@ -114,10 +117,14 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarUnidade;
         paramName = 'nome_unidade';
         textoBotao = 'Criar Unidade';
-    } else {
+    } else if (type === 'tipo_pesquisa') {
         endpoint = window.urlCriarTipoPesquisa;
         paramName = 'nome_tipo';
         textoBotao = 'Criar Tipo de Pesquisa';
+    } else {
+        endpoint = window.urlCriarEspecialidade;
+        paramName = 'nome_especialidade';
+        textoBotao = 'Criar Especialidade';
     }
     
     const params = new URLSearchParams();
@@ -150,7 +157,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
             // Feedback ao usuário
             const sucesso = {
                 unidade: 'Unidade criada com sucesso!',
-                tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!'
+                tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
+                especialidade: 'Especialidade criada com sucesso!'
             };
             alert(sucesso[type] || 'Opção criada com sucesso!');
         } else {
