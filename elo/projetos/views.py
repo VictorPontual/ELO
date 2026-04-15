@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, Envolve
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, Envolve
 from contas.models import Pesquisador
 from django import forms
 
@@ -75,6 +75,36 @@ ESPECIALIDADES_PROPONENTE_INICIAIS = [
     'Transplante',
     'Urologia',
     'outros',
+]
+
+INSTITUICOES_PROPONENTE_INICIAIS = [
+    'HUB/EBSERH',
+    'UNB/Faculdade de Agronomia e Medicina Veterinária',
+    'UNB/Faculdade de Arquitetura e Urbanismo',
+    'UNB/Faculdade de Ciência da Informação',
+    'UNB/Faculdade de Ciências da Saúde',
+    'UNB/Faculdade de Comunicação',
+    'UNB/Faculdade de Direito',
+    'UNB/Faculdade de Economia, Administração, Contabilidade e Gestão de Políticas Públicas',
+    'UNB/Faculdade de Educação',
+    'UNB/Faculdade de Educação Física',
+    'UNB/Faculdade de Medicina',
+    'UNB/Faculdade de Tecnologia',
+    'UNB/Faculdade UnB Ceilândia',
+    'UNB/Faculdade UnB Gama',
+    'UNB/Faculdade UnB Planaltina',
+    'UNB/Instituto de Artes',
+    'UNB/Instituto de Ciência Política',
+    'UNB/Instituto de Ciências Biológicas',
+    'UNB/Instituto de Ciências Exatas',
+    'UNB/Instituto de Ciências Humanas',
+    'UNB/Instituto de Ciências Sociais',
+    'UNB/Instituto de Física',
+    'UNB/Instituto de Geociências',
+    'UNB/Instituto de Letras',
+    'UNB/Instituto de Psicologia',
+    'UNB/Instituto de Química',
+    'UNB/Instituto de Relações Internacionais',
 ]
 
 CLASSIFICACOES_INSTITUCIONAIS_FIXAS = [
@@ -165,21 +195,31 @@ UNIDADES_ORGANIZACIONAIS_INICIAIS = [
 def _garantir_tipos_pesquisa_iniciais():
     for nome in TIPOS_PESQUISA_INICIAIS:
         TipoPesquisa.objects.get_or_create(nome_tipo=nome)
+    TipoPesquisa.objects.exclude(nome_tipo__in=TIPOS_PESQUISA_INICIAIS).delete()
 
 
 def _garantir_classificacoes_fixas():
     for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS:
         ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
+    ClassificacaoInstitucional.objects.exclude(nome_classificacao__in=CLASSIFICACOES_INSTITUCIONAIS_FIXAS).delete()
 
 
 def _garantir_especialidades_iniciais():
     for nome in ESPECIALIDADES_PROPONENTE_INICIAIS:
         EspecialidadeProponente.objects.get_or_create(nome_especialidade=nome)
+    EspecialidadeProponente.objects.exclude(nome_especialidade__in=ESPECIALIDADES_PROPONENTE_INICIAIS).delete()
+
+
+def _garantir_instituicoes_iniciais():
+    for nome in INSTITUICOES_PROPONENTE_INICIAIS:
+        InstituicaoProponente.objects.get_or_create(nome_instituicao=nome)
+    InstituicaoProponente.objects.exclude(nome_instituicao__in=INSTITUICOES_PROPONENTE_INICIAIS).delete()
 
 
 def _garantir_unidades_iniciais():
     for nome in UNIDADES_ORGANIZACIONAIS_INICIAIS:
         Unidade.objects.get_or_create(nome_unidade=nome)
+    Unidade.objects.exclude(nome_unidade__in=UNIDADES_ORGANIZACIONAIS_INICIAIS).delete()
 
 
 def _formatar_trimestre(data):
@@ -249,13 +289,24 @@ class ProjetoForm(forms.ModelForm):
         label='Especialidade do Proponente',
         empty_label='-- Selecionar especialidade --'
     )
+
+    instituicao_proponente = forms.ModelChoiceField(
+        queryset=InstituicaoProponente.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_instituicao_select'
+        }),
+        label='Instituição Proponente',
+        empty_label='-- Selecionar instituição --'
+    )
     
     class Meta:
         model = Projeto
         fields = [
             'sig_id_projeto', 'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
-            'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
+            'especialidade_proponente', 'instituicao_proponente', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
             'data_parecer_cep', 'papel_HUB_multi', 'parceria_HUB_UNB',
             'HUB_proponente'
@@ -270,6 +321,7 @@ class ProjetoForm(forms.ModelForm):
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
+            'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -290,6 +342,7 @@ class ProjetoForm(forms.ModelForm):
             'desenvolvimento_tecnologico': 'Desenvolvimento Tecnológico',
             'multicentrico': 'Multicêntrico',
             'especialidade_proponente': 'Especialidade do Proponente',
+            'instituicao_proponente': 'Instituição Proponente',
             'linhas_pesq': 'Linhas de Pesquisa',
             'inicio_coleta': 'Início da Coleta',
             'fim_coleta': 'Fim da Coleta',
@@ -306,13 +359,16 @@ class ProjetoForm(forms.ModelForm):
         _garantir_tipos_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
         _garantir_especialidades_iniciais()
+        _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
+        self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
 
         tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
         if tipo_pesq_atual:
-            tipo_obj, _ = TipoPesquisa.objects.get_or_create(nome_tipo=tipo_pesq_atual)
-            self.initial['tipo_pesq'] = tipo_obj
+            tipo_obj = TipoPesquisa.objects.filter(nome_tipo=tipo_pesq_atual).first()
+            if tipo_obj:
+                self.initial['tipo_pesq'] = tipo_obj
 
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
@@ -321,8 +377,15 @@ class ProjetoForm(forms.ModelForm):
 
         especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
         if especialidade_atual:
-            especialidade_obj, _ = EspecialidadeProponente.objects.get_or_create(nome_especialidade=especialidade_atual)
-            self.initial['especialidade_proponente'] = especialidade_obj
+            especialidade_obj = EspecialidadeProponente.objects.filter(nome_especialidade=especialidade_atual).first()
+            if especialidade_obj:
+                self.initial['especialidade_proponente'] = especialidade_obj
+
+        instituicao_atual = getattr(self.instance, 'instituicao_proponente', None)
+        if instituicao_atual:
+            instituicao_obj = InstituicaoProponente.objects.filter(nome_instituicao=instituicao_atual).first()
+            if instituicao_obj:
+                self.initial['instituicao_proponente'] = instituicao_obj
 
     def clean(self):
         cleaned_data = super().clean()
@@ -361,6 +424,9 @@ class ProjetoForm(forms.ModelForm):
 
         especialidade = self.cleaned_data.get('especialidade_proponente')
         projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
+
+        instituicao = self.cleaned_data.get('instituicao_proponente')
+        projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
 
         if commit:
             projeto.save()
@@ -412,13 +478,24 @@ class ProjetoEditForm(forms.ModelForm):
         label='Especialidade do Proponente',
         empty_label='-- Selecionar especialidade --'
     )
+
+    instituicao_proponente = forms.ModelChoiceField(
+        queryset=InstituicaoProponente.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_instituicao_select'
+        }),
+        label='Instituição Proponente',
+        empty_label='-- Selecionar instituição --'
+    )
     
     class Meta:
         model = Projeto
         fields = [
             'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise',
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
-            'especialidade_proponente', 'linhas_pesq', 'inicio_coleta',
+            'especialidade_proponente', 'instituicao_proponente', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
             'data_parecer_cep', 'papel_HUB_multi', 'parceria_HUB_UNB',
             'HUB_proponente'
@@ -432,6 +509,7 @@ class ProjetoEditForm(forms.ModelForm):
             'desenvolvimento_tecnologico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'multicentrico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
+            'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -451,6 +529,7 @@ class ProjetoEditForm(forms.ModelForm):
             'desenvolvimento_tecnologico': 'Desenvolvimento Tecnológico',
             'multicentrico': 'Multicêntrico',
             'especialidade_proponente': 'Especialidade do Proponente',
+            'instituicao_proponente': 'Instituição Proponente',
             'linhas_pesq': 'Linhas de Pesquisa',
             'inicio_coleta': 'Início da Coleta',
             'fim_coleta': 'Fim da Coleta',
@@ -467,13 +546,16 @@ class ProjetoEditForm(forms.ModelForm):
         _garantir_tipos_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
         _garantir_especialidades_iniciais()
+        _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
+        self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
 
         tipo_pesq_atual = getattr(self.instance, 'tipo_pesq', None)
         if tipo_pesq_atual:
-            tipo_obj, _ = TipoPesquisa.objects.get_or_create(nome_tipo=tipo_pesq_atual)
-            self.initial['tipo_pesq'] = tipo_obj
+            tipo_obj = TipoPesquisa.objects.filter(nome_tipo=tipo_pesq_atual).first()
+            if tipo_obj:
+                self.initial['tipo_pesq'] = tipo_obj
 
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
@@ -482,8 +564,15 @@ class ProjetoEditForm(forms.ModelForm):
 
         especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
         if especialidade_atual:
-            especialidade_obj, _ = EspecialidadeProponente.objects.get_or_create(nome_especialidade=especialidade_atual)
-            self.initial['especialidade_proponente'] = especialidade_obj
+            especialidade_obj = EspecialidadeProponente.objects.filter(nome_especialidade=especialidade_atual).first()
+            if especialidade_obj:
+                self.initial['especialidade_proponente'] = especialidade_obj
+
+        instituicao_atual = getattr(self.instance, 'instituicao_proponente', None)
+        if instituicao_atual:
+            instituicao_obj = InstituicaoProponente.objects.filter(nome_instituicao=instituicao_atual).first()
+            if instituicao_obj:
+                self.initial['instituicao_proponente'] = instituicao_obj
 
     def clean(self):
         cleaned_data = super().clean()
@@ -522,6 +611,9 @@ class ProjetoEditForm(forms.ModelForm):
 
         especialidade = self.cleaned_data.get('especialidade_proponente')
         projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
+
+        instituicao = self.cleaned_data.get('instituicao_proponente')
+        projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
 
         if commit:
             projeto.save()
@@ -662,6 +754,27 @@ def criar_especialidade_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome da especialidade não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_instituicao_ajax(request):
+    """View AJAX para criar nova instituição proponente"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_instituicao', '').strip()
+        if nome:
+            instituicao, created = InstituicaoProponente.objects.get_or_create(nome_instituicao=nome)
+            return JsonResponse({
+                'success': True,
+                'id': instituicao.pk,
+                'nome': instituicao.nome_instituicao,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da instituição não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 

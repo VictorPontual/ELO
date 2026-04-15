@@ -124,6 +124,15 @@
             </div>
 
             <div class="form-group">
+                <label for="{{ form.instituicao_proponente.id_for_label }}">{{ form.instituicao_proponente.label }}</label>
+                {{ form.instituicao_proponente }}
+                {% if form.instituicao_proponente.errors %}
+                    <span class="error">{{ form.instituicao_proponente.errors.0 }}</span>
+                {% endif %}
+                <small class="form-text text-muted">Selecione uma instituição existente ou crie uma nova</small>
+            </div>
+
+            <div class="form-group">
                 <label for="{{ form.papel_HUB_multi.id_for_label }}">{{ form.papel_HUB_multi.label }}</label>
                 {{ form.papel_HUB_multi }}
                 {% if form.papel_HUB_multi.errors %}
@@ -361,6 +370,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para criar nova instituição proponente -->
+    <div id="modalCriarInstituicao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Instituição Proponente</h2>
+            <div class="form-group">
+                <label for="nomeInstituicaoInput">Nome da Instituição *</label>
+                <input type="text" id="nomeInstituicaoInput" placeholder="Ex: Instituto de Ciências Sociais" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarInstituicao" class="btn-primary">Criar Instituição</button>
+                <button type="button" id="botaoCancelarInstituicao" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -372,5 +397,6 @@
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
+    window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";
 </script>
 {% endblock %}

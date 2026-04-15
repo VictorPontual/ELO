@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('unidade', 'modalCriarUnidade', 'id_unidade_select', 'nomeUnidadeInput', 'botaoCriarUnidade', 'botaoCancelarUnidade');
     setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
     setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
+    setupDropdownModal('instituicao', 'modalCriarInstituicao', 'id_instituicao_select', 'nomeInstituicaoInput', 'botaoCriarInstituicao', 'botaoCancelarInstituicao');
 });
 
 function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelButtonId) {
@@ -19,7 +20,8 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
     const labels = {
         unidade: '+ Nova Unidade',
         tipo_pesquisa: '+ Novo Tipo de Pesquisa',
-        especialidade: '+ Nova Especialidade'
+        especialidade: '+ Nova Especialidade',
+        instituicao: '+ Nova Instituição'
     };
     optionCriarNova.textContent = labels[type] || '+ Nova Opção';
     optionCriarNova.style.fontWeight = 'bold';
@@ -95,7 +97,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     const nomes = {
         unidade: 'unidade',
         tipo_pesquisa: 'tipo de pesquisa',
-        especialidade: 'especialidade'
+        especialidade: 'especialidade',
+        instituicao: 'instituição'
     };
 
     if (!nome) {
@@ -121,6 +124,10 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarTipoPesquisa;
         paramName = 'nome_tipo';
         textoBotao = 'Criar Tipo de Pesquisa';
+    } else if (type === 'instituicao') {
+        endpoint = window.urlCriarInstituicao;
+        paramName = 'nome_instituicao';
+        textoBotao = 'Criar Instituição';
     } else {
         endpoint = window.urlCriarEspecialidade;
         paramName = 'nome_especialidade';
@@ -158,7 +165,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
             const sucesso = {
                 unidade: 'Unidade criada com sucesso!',
                 tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
-                especialidade: 'Especialidade criada com sucesso!'
+                especialidade: 'Especialidade criada com sucesso!',
+                instituicao: 'Instituição criada com sucesso!'
             };
             alert(sucesso[type] || 'Opção criada com sucesso!');
         } else {

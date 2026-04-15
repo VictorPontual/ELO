@@ -39,6 +39,17 @@ class EspecialidadeProponente(models.Model):
         verbose_name = 'Especialidade do Proponente'
         verbose_name_plural = 'Especialidades do Proponente'
 
+
+class InstituicaoProponente(models.Model):
+    nome_instituicao = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_instituicao
+
+    class Meta:
+        verbose_name = 'Instituição Proponente'
+        verbose_name_plural = 'Instituições Proponentes'
+
 class Projeto(models.Model):
     PARECER_CEP_CHOICES = [
         ('sim', 'Sim'),
@@ -54,6 +65,7 @@ class Projeto(models.Model):
     desenvolvimento_tecnologico = models.BooleanField(default=False)
     multicentrico = models.BooleanField(default=False)
     especialidade_proponente = models.CharField(max_length=255, blank=True, null=True)
+    instituicao_proponente = models.CharField(max_length=255, blank=True, null=True)
     linhas_pesq = models.TextField(blank=True, null=True)
     inicio_coleta = models.DateField(blank=True, null=True)
     fim_coleta = models.DateField(blank=True, null=True)
