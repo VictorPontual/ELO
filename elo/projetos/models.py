@@ -51,9 +51,25 @@ class InstituicaoProponente(models.Model):
         verbose_name_plural = 'Instituições Proponentes'
 
 class Projeto(models.Model):
+    DESENVOLVIMENTO_TECNOLOGICO_CHOICES = [
+        ('sim', 'Sim'),
+        ('nao', 'Não'),
+        ('duvida', 'Em dúvida'),
+    ]
+
     PARECER_CEP_CHOICES = [
         ('sim', 'Sim'),
         ('na', 'N/A'),
+    ]
+
+    TIPO_FOMENTO_CHOICES = [
+        ('EDITAL DE AGÊNCIAS DE FOMENTO', 'EDITAL DE AGÊNCIAS DE FOMENTO'),
+        ('PÚBLICO NACIONAL', 'PÚBLICO NACIONAL'),
+        ('PÚBLICO INTERNACIONAL', 'PÚBLICO INTERNACIONAL'),
+        ('PRIVADO INTERNACIONAL', 'PRIVADO INTERNACIONAL'),
+        ('PRIVADO NACIONAL', 'PRIVADO NACIONAL'),
+        ('PRÓPRIO PESQUISADOR', 'PRÓPRIO PESQUISADOR'),
+        ('OUTRA', 'OUTRA'),
     ]
 
     sig_id_projeto = models.CharField(max_length=100, primary_key=True)
@@ -62,10 +78,16 @@ class Projeto(models.Model):
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
     tipo_pesq = models.CharField(max_length=255, blank=True, null=True)
-    desenvolvimento_tecnologico = models.BooleanField(default=False)
+    desenvolvimento_tecnologico = models.CharField(
+        max_length=10,
+        choices=DESENVOLVIMENTO_TECNOLOGICO_CHOICES,
+        blank=True,
+        null=True,
+    )
     multicentrico = models.BooleanField(default=False)
     especialidade_proponente = models.CharField(max_length=255, blank=True, null=True)
     instituicao_proponente = models.CharField(max_length=255, blank=True, null=True)
+    tipo_fomento = models.CharField(max_length=50, choices=TIPO_FOMENTO_CHOICES, blank=True, null=True)
     linhas_pesq = models.TextField(blank=True, null=True)
     inicio_coleta = models.DateField(blank=True, null=True)
     fim_coleta = models.DateField(blank=True, null=True)

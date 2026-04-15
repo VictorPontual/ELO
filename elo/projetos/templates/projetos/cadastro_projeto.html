@@ -94,13 +94,16 @@
 
         <div class="form-section">
             <h3>Características do Projeto</h3>
+
+            <div class="form-group">
+                <label for="{{ form.desenvolvimento_tecnologico.id_for_label }}">{{ form.desenvolvimento_tecnologico.label }}</label>
+                {{ form.desenvolvimento_tecnologico }}
+                {% if form.desenvolvimento_tecnologico.errors %}
+                    <span class="error">{{ form.desenvolvimento_tecnologico.errors.0 }}</span>
+                {% endif %}
+            </div>
             
             <div class="form-check-group">
-                <div class="form-check">
-                    {{ form.desenvolvimento_tecnologico }}
-                    <label for="{{ form.desenvolvimento_tecnologico.id_for_label }}">{{ form.desenvolvimento_tecnologico.label }}</label>
-                </div>
-
                 <div class="form-check">
                     {{ form.multicentrico }}
                     <label for="{{ form.multicentrico.id_for_label }}">{{ form.multicentrico.label }}</label>
@@ -133,6 +136,14 @@
                     <span class="error">{{ form.instituicao_proponente.errors.0 }}</span>
                 {% endif %}
                 <small class="form-text text-muted">Selecione uma instituição existente ou crie uma nova</small>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.tipo_fomento.id_for_label }}">{{ form.tipo_fomento.label }}</label>
+                {{ form.tipo_fomento }}
+                {% if form.tipo_fomento.errors %}
+                    <span class="error">{{ form.tipo_fomento.errors.0 }}</span>
+                {% endif %}
             </div>
 
             <div class="form-group">
