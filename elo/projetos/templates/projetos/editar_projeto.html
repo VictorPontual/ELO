@@ -77,7 +77,7 @@
         </div>
 
         <div class="form-section">
-            <h3>Classificação e Unidade Organizacional</h3>
+            <h3>Classificação Institucional</h3>
 
             <div class="form-group">
                 <label for="{{ form.classificacao.id_for_label }}">{{ form.classificacao.label }}</label>
@@ -87,13 +87,6 @@
                 {% endif %}
             </div>
             
-            <div class="form-group">
-                <label for="{{ form.unidade.id_for_label }}">{{ form.unidade.label }}</label>
-                {{ form.unidade }}
-                {% if form.unidade.errors %}
-                    <span class="error">{{ form.unidade.errors.0 }}</span>
-                {% endif %}
-            </div>
         </div>
 
         <div class="form-section">
@@ -265,6 +258,58 @@
                 </div>
 
                 <button type="submit" class="btn-adicionar">+ Adicionar Pesquisador</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Seção de Gerenciamento de Unidades -->
+    <div class="participantes-section">
+        <h3>Unidades Organizacionais do Projeto</h3>
+
+        <div class="participantes-lista">
+            {% if envolvimentos %}
+                <table class="participantes-table">
+                    <thead>
+                        <tr>
+                            <th>Unidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for envolve in envolvimentos %}
+                        <tr>
+                            <td>{{ envolve.unidade.nome_unidade }}</td>
+                            <td>
+                                <form method="post" action="{% url 'remover_unidade' projeto.sig_id_projeto envolve.id %}" class="form-inline" onsubmit="return confirm('Deseja remover esta unidade do projeto?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-remover" title="Remover unidade">
+                                        <span>✕</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-participantes">Nenhuma unidade adicionada ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="adicionar-participante">
+            <h4>Adicionar Unidade Organizacional</h4>
+            <form method="post" action="{% url 'adicionar_unidade' projeto.sig_id_projeto %}" class="participacao-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ envolve_form.unidade.id_for_label }}">{{ envolve_form.unidade.label }}</label>
+                    {{ envolve_form.unidade }}
+                    {% if envolve_form.unidade.errors %}
+                        <span class="error">{{ envolve_form.unidade.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn-adicionar">+ Adicionar Unidade</button>
             </form>
         </div>
     </div>

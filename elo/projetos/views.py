@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, Envolve
 from contas.models import Pesquisador
 from django import forms
 
@@ -83,6 +83,84 @@ CLASSIFICACOES_INSTITUCIONAIS_FIXAS = [
     'Pesquisa QUE NÃO ENVOLVE seres humanos',
 ]
 
+UNIDADES_ORGANIZACIONAIS_INICIAIS = [
+    'GERÊNCIA DE ATENÇÃO À SAÚDE',
+    'Unidade Multiprofissional',
+    'Unidade do Sistema Urinário',
+    'Unidade do Sistema Cardiovascular',
+    'Unidade de Vigilância em Saúde',
+    'Unidade de Urgência e Emergência',
+    'Unidade de Transplantes',
+    'Unidade de Terapia Intensiva Neonatal',
+    'Unidade de Terapia Intensiva Adulto',
+    'Unidade de Sistemas de Informação e Inteligência de Dados',
+    'Unidade de Serviços Gerais',
+    'Unidade de Saúde Ocupacional e Segurança do Trabalho',
+    'Unidade de Saúde Mental',
+    'Unidade de Saúde da Mulher',
+    'Unidade de Saúde Bucal',
+    'Unidade de Regulação Assistencial',
+    'Unidade de Planejamento, Gestão de Riscos e Controles Internos',
+    'Unidade de Planejamento e Gestão Orçamentária',
+    'Unidade de Planejamento e Dimensionamento de Estoques',
+    'Unidade de Patrimônio',
+    'Unidade de Oncologia',
+    'Unidade de Laboratório de Análises Clínicas',
+    'Unidade de Infraestrutura, Suporte e Segurança de Tecnologia da Informação',
+    'Unidade de Hematologia e Hemoterapia',
+    'Unidade de Gestão e Processamento da Informação Assistencial',
+    'Unidade de Gestão de Pós-Graduação',
+    'Unidade de Gestão de Graduação, Ensino Técnico e Extensão',
+    'Unidade de Gestão da Qualidade e Segurança do Paciente',
+    'Unidade de Gestão da Pesquisa',
+    'Unidade de Gestão da Inovação Tecnológica em Saúde',
+    'Unidade de Fiscalização Administrativa de Contratos',
+    'Unidade de Execução Orçamentária e Financeira',
+    'Unidade de Especialidades Clínicas',
+    'Unidade de e-Saúde',
+    'Unidade de Diagnósticos Especializados',
+    'Unidade de Diagnóstico por Imagem',
+    'Unidade de Desenvolvimento de Pessoal',
+    'Unidade de Contratualização',
+    'Unidade de Contratos',
+    'Unidade de Comunicação Social',
+    'Unidade de Compras e Licitações',
+    'Unidade de Clínica Cirúrgica',
+    'Unidade de Bloco Cirúrgico e Processamento de Materiais Esterilizados',
+    'Unidade de Anatomia Patológica',
+    'Unidade de Ambulatório',
+    'Unidade de Almoxarifado e Controle de Estoques',
+    'Unidade de Administração de Pessoal',
+    'Unidade da Criança e do Adolescente',
+    'SUPERINTENDÊNCIA',
+    'Setor de Tecnologia da Informação e Saúde Digital',
+    'Setor de Paciente Crítico',
+    'Setor de Infraestrutura Física',
+    'Setor de Hotelaria Hospitalar',
+    'Setor de Governança e Estratégia',
+    'Setor de Gestão Orçamentária e Financeira',
+    'Setor de Gestão do Ensino',
+    'Setor de Gestão da Qualidade',
+    'Setor de Gestão da Pesquisa e da Inovação Tecnológica em Saúde',
+    'Setor de Farmácia Hospitalar',
+    'Setor de Engenharia Clínica',
+    'Setor de Contratualização e Regulação',
+    'Setor de Contabilidade',
+    'Setor de Apoio Diagnóstico e Terapêutico',
+    'Setor de Administração',
+    'Setor de Abastecimento Farmacêutico e Suprimentos',
+    'GERÊNCIA DE ENSINO E PESQUISA',
+    'GERÊNCIA ADMINISTRATIVA',
+    'Divisão Médica',
+    'Divisão de Logística e Infraestrutura',
+    'Divisão de Gestão do Cuidado',
+    'Divisão de Gestão de Pessoas',
+    'Divisão de Enfermagem',
+    'Divisão de Apoio Diagnóstico e Terapêutico',
+    'Divisão de Administração e Finanças',
+    'OUTRO',
+]
+
 
 def _garantir_tipos_pesquisa_iniciais():
     for nome in TIPOS_PESQUISA_INICIAIS:
@@ -97,6 +175,11 @@ def _garantir_classificacoes_fixas():
 def _garantir_especialidades_iniciais():
     for nome in ESPECIALIDADES_PROPONENTE_INICIAIS:
         EspecialidadeProponente.objects.get_or_create(nome_especialidade=nome)
+
+
+def _garantir_unidades_iniciais():
+    for nome in UNIDADES_ORGANIZACIONAIS_INICIAIS:
+        Unidade.objects.get_or_create(nome_unidade=nome)
 
 
 def _formatar_trimestre(data):
@@ -144,17 +227,6 @@ class ProjetoForm(forms.ModelForm):
         empty_label='-- Selecionar tipo --'
     )
 
-    unidade = forms.ModelChoiceField(
-        queryset=Unidade.objects.all().order_by('nome_unidade'),
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'id_unidade_select'
-        }),
-        label='Unidade Organizacional',
-        empty_label="-- Selecionar unidade --"
-    )
-    
     classificacao = forms.ChoiceField(
         choices=[('', '-- Selecionar classificação --')] + [
             (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
@@ -293,11 +365,6 @@ class ProjetoForm(forms.ModelForm):
         if commit:
             projeto.save()
         
-        # Processar unidade
-        unidade = self.cleaned_data.get('unidade')
-        if unidade:
-            projeto.unidades.add(unidade)
-        
         # Processar classificação
         classificacao_nome = self.cleaned_data.get('classificacao')
         projeto.classificacoes.clear()
@@ -323,17 +390,6 @@ class ProjetoEditForm(forms.ModelForm):
         empty_label='-- Selecionar tipo --'
     )
 
-    unidade = forms.ModelChoiceField(
-        queryset=Unidade.objects.all().order_by('nome_unidade'),
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-            'id': 'id_unidade_select'
-        }),
-        label='Unidade Organizacional',
-        empty_label="-- Selecionar unidade --"
-    )
-    
     classificacao = forms.ChoiceField(
         choices=[('', '-- Selecionar classificação --')] + [
             (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
@@ -470,11 +526,6 @@ class ProjetoEditForm(forms.ModelForm):
         if commit:
             projeto.save()
         
-        # Processar unidade
-        unidade = self.cleaned_data.get('unidade')
-        if unidade:
-            projeto.unidades.add(unidade)
-        
         # Processar classificação
         classificacao_nome = self.cleaned_data.get('classificacao')
         projeto.classificacoes.clear()
@@ -508,6 +559,27 @@ class ParticipacaoForm(forms.ModelForm):
             pesquisador_field = self.fields.get('pesquisador')
             if isinstance(pesquisador_field, forms.ModelChoiceField):
                 pesquisador_field.queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+
+
+class EnvolveForm(forms.Form):
+    unidade = forms.ModelChoiceField(
+        queryset=Unidade.objects.none(),
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_unidade_select'}),
+        label='Unidade Organizacional',
+        empty_label='-- Selecionar unidade --',
+    )
+
+    def __init__(self, *args, projeto=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        _garantir_unidades_iniciais()
+
+        queryset = Unidade.objects.all().order_by('nome_unidade')
+        if projeto:
+            unidades_ids = Envolve.objects.filter(projeto=projeto).values_list('unidade_id', flat=True)
+            queryset = queryset.exclude(pk__in=unidades_ids)
+
+        self.fields['unidade'].queryset = queryset
 
 
 @login_required
@@ -667,17 +739,21 @@ def editar_projeto(request, projeto_id):
     else:
         form = ProjetoEditForm(instance=projeto)
     
-    # Formulário para adicionar pesquisadores
+    # Formulários para adicionar vínculos
     participacao_form = ParticipacaoForm(projeto=projeto)
+    envolve_form = EnvolveForm(projeto=projeto)
     
     # Lista de participantes atuais
     participacoes = Participacao.objects.filter(projeto=projeto).select_related('pesquisador__user')
+    envolvimentos = Envolve.objects.filter(projeto=projeto).select_related('unidade')
     
     context = {
         'form': form,
         'projeto': projeto,
         'participacao_form': participacao_form,
+        'envolve_form': envolve_form,
         'participacoes': participacoes,
+        'envolvimentos': envolvimentos,
     }
     
     return render(request, 'projetos/editar_projeto.html', context)
@@ -720,4 +796,45 @@ def remover_pesquisador(request, projeto_id, participacao_id):
     participacao.delete()
     messages.success(request, f'Pesquisador {pesquisador_nome} removido do projeto.')
     
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+
+@login_required
+def adicionar_unidade(request, projeto_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para adicionar unidades.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+
+    if request.method == 'POST':
+        form = EnvolveForm(request.POST, projeto=projeto)
+        if form.is_valid():
+            unidade = form.cleaned_data['unidade']
+            try:
+                Envolve.objects.create(projeto=projeto, unidade=unidade)
+                messages.success(request, 'Unidade adicionada com sucesso!')
+            except Exception as e:
+                messages.error(request, f'Erro ao adicionar unidade: {str(e)}')
+        else:
+            messages.error(request, 'Erro ao adicionar unidade. Verifique os dados.')
+
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+
+@login_required
+def remover_unidade(request, projeto_id, envolve_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para remover unidades.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    envolve = get_object_or_404(Envolve, id=envolve_id, projeto=projeto)
+
+    unidade_nome = envolve.unidade.nome_unidade
+    envolve.delete()
+    messages.success(request, f'Unidade {unidade_nome} removida do projeto.')
+
     return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)

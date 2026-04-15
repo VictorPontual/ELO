@@ -79,7 +79,7 @@
         </div>
 
         <div class="form-section">
-            <h3>Classificação e Unidade Organizacional</h3>
+            <h3>Classificação Institucional</h3>
             
             <div class="form-group">
                 <label for="{{ form.classificacao.id_for_label }}">{{ form.classificacao.label }}</label>
@@ -90,13 +90,6 @@
                     <small class="form-text text-muted">Selecione uma das classificações institucionais disponíveis</small>
             </div>
             
-            <div class="form-group">
-                <label for="{{ form.unidade.id_for_label }}">{{ form.unidade.label }}</label>
-                {{ form.unidade }}
-                {% if form.unidade.errors %}
-                    <span class="error">{{ form.unidade.errors.0 }}</span>
-                {% endif %}
-            </div>
         </div>
 
         <div class="form-section">
@@ -204,22 +197,6 @@
         </div>
     </form>
 
-    <!-- Modal para criar nova unidade -->
-    <div id="modalCriarUnidade" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Criar Nova Unidade</h2>
-            <div class="form-group">
-                <label for="nomeUnidadeInput">Nome da Unidade *</label>
-                <input type="text" id="nomeUnidadeInput" placeholder="Ex: Departamento de Pesquisa" autocomplete="off">
-            </div>
-            <div class="modal-buttons">
-                <button type="button" id="botaoCriarUnidade" class="btn-primary">Criar Unidade</button>
-                <button type="button" id="botaoCancelarUnidade" class="btn-secondary">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal para criar novo tipo de pesquisa -->
     <div id="modalCriarTipoPesquisa" class="modal">
         <div class="modal-content">
@@ -259,7 +236,6 @@
 <script src="{% static 'projetos/js/unidade_modal.js' %}"></script>
 <script>
     // Passar URLs dos endpoints AJAX para o JavaScript
-    window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
 </script>
