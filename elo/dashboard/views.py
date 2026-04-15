@@ -104,10 +104,9 @@ def dashboard(request):
 
     class_data = list(
         aprovados_ano
-        .exclude(class_inst__isnull=True)
-        .exclude(class_inst__exact='')
-        .values('class_inst')
-        .annotate(total=Count('sig_id_projeto'))
+        .exclude(classificacoes__isnull=True)
+        .values('classificacoes__nome_classificacao')
+        .annotate(total=Count('sig_id_projeto', distinct=True))
         .order_by('-total')[:8]
     )
 
@@ -133,7 +132,7 @@ def dashboard(request):
             'values': [item['total'] for item in tipo_data],
         },
         'classificacao': {
-            'labels': [item['class_inst'] for item in class_data],
+            'labels': [item['classificacoes__nome_classificacao'] for item in class_data],
             'values': [item['total'] for item in class_data],
         },
         'tecnologico': _build_boolean_breakdown(aprovados_ano, 'desenvolvimento_tecnologico'),
