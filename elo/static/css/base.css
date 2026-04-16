@@ -53,6 +53,26 @@ header nav ul li a:hover {
     color: #3498db;
 }
 
+header nav ul li .logout-form {
+    display: flex;
+    align-items: center;
+}
+
+header nav ul li .logout-button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    line-height: 1;
+}
+
+header nav ul li .logout-button:hover {
+    color: #3498db;
+    background: none;
+}
+
 main {
     flex: 1;
     max-width: 1200px;
