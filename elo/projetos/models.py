@@ -50,6 +50,17 @@ class InstituicaoProponente(models.Model):
         verbose_name = 'Instituição Proponente'
         verbose_name_plural = 'Instituições Proponentes'
 
+
+class HospitalHubBrasil(models.Model):
+    nome_hospital = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_hospital
+
+    class Meta:
+        verbose_name = 'Hospital da Rede HUBrasil'
+        verbose_name_plural = 'Hospitais da Rede HUBrasil'
+
 class Projeto(models.Model):
     DESENVOLVIMENTO_TECNOLOGICO_CHOICES = [
         ('sim', 'Sim'),
@@ -100,6 +111,7 @@ class Projeto(models.Model):
     
     pesquisadores = models.ManyToManyField(Pesquisador, through='Participacao')
     unidades = models.ManyToManyField(Unidade, through='Envolve')
+    hospitais_parceiros = models.ManyToManyField(HospitalHubBrasil, through='ParceriaHospital', blank=True)
     classificacoes = models.ManyToManyField(ClassificacaoInstitucional, blank=True)
 
     def __str__(self):
@@ -137,3 +149,14 @@ class Envolve(models.Model):
 
     def __str__(self):
         return f"{self.unidade.nome_unidade} envolvida em {self.projeto.titulo}"
+
+
+class ParceriaHospital(models.Model):
+    hospital = models.ForeignKey(HospitalHubBrasil, on_delete=models.CASCADE)
+    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('hospital', 'projeto')
+
+    def __str__(self):
+        return f"{self.hospital.nome_hospital} parceiro em {self.projeto.titulo}"

@@ -1,6 +1,7 @@
 // Modal para criar nova unidade, tipo de pesquisa e especialidade
 document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('unidade', 'modalCriarUnidade', 'id_unidade_select', 'nomeUnidadeInput', 'botaoCriarUnidade', 'botaoCancelarUnidade');
+    setupDropdownModal('hospital', 'modalCriarHospital', 'id_hospital_select', 'nomeHospitalInput', 'botaoCriarHospital', 'botaoCancelarHospital');
     setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
     setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
     setupDropdownModal('instituicao', 'modalCriarInstituicao', 'id_instituicao_select', 'nomeInstituicaoInput', 'botaoCriarInstituicao', 'botaoCancelarInstituicao');
@@ -19,6 +20,7 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
     optionCriarNova.value = newOptionValue;
     const labels = {
         unidade: '+ Nova Unidade',
+        hospital: '+ Novo Hospital',
         tipo_pesquisa: '+ Novo Tipo de Pesquisa',
         especialidade: '+ Nova Especialidade',
         instituicao: '+ Nova Instituição'
@@ -96,6 +98,7 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
     
     const nomes = {
         unidade: 'unidade',
+        hospital: 'hospital',
         tipo_pesquisa: 'tipo de pesquisa',
         especialidade: 'especialidade',
         instituicao: 'instituição'
@@ -120,6 +123,10 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarUnidade;
         paramName = 'nome_unidade';
         textoBotao = 'Criar Unidade';
+    } else if (type === 'hospital') {
+        endpoint = window.urlCriarHospital;
+        paramName = 'nome_hospital';
+        textoBotao = 'Criar Hospital';
     } else if (type === 'tipo_pesquisa') {
         endpoint = window.urlCriarTipoPesquisa;
         paramName = 'nome_tipo';
@@ -164,6 +171,7 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
             // Feedback ao usuário
             const sucesso = {
                 unidade: 'Unidade criada com sucesso!',
+                hospital: 'Hospital criado com sucesso!',
                 tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
                 especialidade: 'Especialidade criada com sucesso!',
                 instituicao: 'Instituição criada com sucesso!'

@@ -334,6 +334,58 @@
         </div>
     </div>
 
+    <!-- Seção de Gerenciamento de Hospitais Parceiros -->
+    <div class="participantes-section">
+        <h3>Hospitais Parceiros da Rede HUBrasil</h3>
+
+        <div class="participantes-lista">
+            {% if parcerias_hospitalares %}
+                <table class="participantes-table">
+                    <thead>
+                        <tr>
+                            <th>Hospital</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parceria in parcerias_hospitalares %}
+                        <tr>
+                            <td>{{ parceria.hospital.nome_hospital }}</td>
+                            <td>
+                                <form method="post" action="{% url 'remover_hospital' projeto.sig_id_projeto parceria.id %}" class="form-inline" onsubmit="return confirm('Deseja remover este hospital do projeto?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-remover" title="Remover hospital">
+                                        <span>✕</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-participantes">Nenhum hospital parceiro adicionado ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="adicionar-participante">
+            <h4>Adicionar Hospital Parceiro</h4>
+            <form method="post" action="{% url 'adicionar_hospital' projeto.sig_id_projeto %}" class="participacao-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ hospital_form.hospital.id_for_label }}">{{ hospital_form.hospital.label }}</label>
+                    {{ hospital_form.hospital }}
+                    {% if hospital_form.hospital.errors %}
+                        <span class="error">{{ hospital_form.hospital.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn-adicionar">+ Adicionar Hospital</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal para criar nova unidade -->
     <div id="modalCriarUnidade" class="modal">
         <div class="modal-content">
@@ -346,6 +398,22 @@
             <div class="modal-buttons">
                 <button type="button" id="botaoCriarUnidade" class="btn-primary">Criar Unidade</button>
                 <button type="button" id="botaoCancelarUnidade" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para criar novo hospital -->
+    <div id="modalCriarHospital" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Novo Hospital Parceiro</h2>
+            <div class="form-group">
+                <label for="nomeHospitalInput">Nome do Hospital *</label>
+                <input type="text" id="nomeHospitalInput" placeholder="Ex: Hospital Universitário de Brasília" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarHospital" class="btn-primary">Criar Hospital</button>
+                <button type="button" id="botaoCancelarHospital" class="btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>
@@ -406,6 +474,7 @@
 <script>
     // Passar URLs dos endpoints AJAX para o JavaScript
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
+    window.urlCriarHospital = "{% url 'criar_hospital_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, Envolve
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital
 from contas.models import Pesquisador
 from django import forms
 
@@ -678,6 +678,26 @@ class EnvolveForm(forms.Form):
         self.fields['unidade'].queryset = queryset
 
 
+class ParceriaHospitalForm(forms.Form):
+    hospital = forms.ModelChoiceField(
+        queryset=HospitalHubBrasil.objects.none(),
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_hospital_select'}),
+        label='Hospital da Rede HUBrasil',
+        empty_label='-- Selecionar hospital --',
+    )
+
+    def __init__(self, *args, projeto=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        queryset = HospitalHubBrasil.objects.all().order_by('nome_hospital')
+        if projeto:
+            hospitais_ids = ParceriaHospital.objects.filter(projeto=projeto).values_list('hospital_id', flat=True)
+            queryset = queryset.exclude(pk__in=hospitais_ids)
+
+        self.fields['hospital'].queryset = queryset
+
+
 @login_required
 def criar_unidade_ajax(request):
     """View AJAX para criar nova unidade"""
@@ -695,6 +715,27 @@ def criar_unidade_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome da unidade não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_hospital_ajax(request):
+    """View AJAX para criar novo hospital parceiro"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_hospital', '').strip()
+        if nome:
+            hospital, created = HospitalHubBrasil.objects.get_or_create(nome_hospital=nome)
+            return JsonResponse({
+                'success': True,
+                'id': hospital.pk,
+                'nome': hospital.nome_hospital,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome do hospital não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
@@ -859,18 +900,22 @@ def editar_projeto(request, projeto_id):
     # Formulários para adicionar vínculos
     participacao_form = ParticipacaoForm(projeto=projeto)
     envolve_form = EnvolveForm(projeto=projeto)
+    hospital_form = ParceriaHospitalForm(projeto=projeto)
     
     # Lista de participantes atuais
     participacoes = Participacao.objects.filter(projeto=projeto).select_related('pesquisador__user')
     envolvimentos = Envolve.objects.filter(projeto=projeto).select_related('unidade')
+    parcerias_hospitalares = ParceriaHospital.objects.filter(projeto=projeto).select_related('hospital')
     
     context = {
         'form': form,
         'projeto': projeto,
         'participacao_form': participacao_form,
         'envolve_form': envolve_form,
+        'hospital_form': hospital_form,
         'participacoes': participacoes,
         'envolvimentos': envolvimentos,
+        'parcerias_hospitalares': parcerias_hospitalares,
     }
     
     return render(request, 'projetos/editar_projeto.html', context)
@@ -953,5 +998,46 @@ def remover_unidade(request, projeto_id, envolve_id):
     unidade_nome = envolve.unidade.nome_unidade
     envolve.delete()
     messages.success(request, f'Unidade {unidade_nome} removida do projeto.')
+
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+
+@login_required
+def adicionar_hospital(request, projeto_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para adicionar hospitais.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+
+    if request.method == 'POST':
+        form = ParceriaHospitalForm(request.POST, projeto=projeto)
+        if form.is_valid():
+            hospital = form.cleaned_data['hospital']
+            try:
+                ParceriaHospital.objects.create(projeto=projeto, hospital=hospital)
+                messages.success(request, 'Hospital adicionado com sucesso!')
+            except Exception as e:
+                messages.error(request, f'Erro ao adicionar hospital: {str(e)}')
+        else:
+            messages.error(request, 'Erro ao adicionar hospital. Verifique os dados.')
+
+    return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+
+@login_required
+def remover_hospital(request, projeto_id, parceria_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para remover hospitais.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    parceria = get_object_or_404(ParceriaHospital, id=parceria_id, projeto=projeto)
+
+    hospital_nome = parceria.hospital.nome_hospital
+    parceria.delete()
+    messages.success(request, f'Hospital {hospital_nome} removido do projeto.')
 
     return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
