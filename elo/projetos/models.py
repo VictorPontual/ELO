@@ -105,6 +105,12 @@ class Projeto(models.Model):
         ('OUTRA', 'OUTRA'),
     ]
 
+    PAPEL_HUB_CHOICES = [
+        ('coordenador', 'Coordenador'),
+        ('coparticipante', 'Coparticipante'),
+        ('participante', 'Participante'),
+    ]
+
     sig_id_projeto = models.CharField(max_length=100, primary_key=True)
     sig_id_pesq = models.CharField(max_length=100, blank=True, null=True)
     data_ent_sig = models.DateField(blank=True, null=True)
@@ -128,7 +134,12 @@ class Projeto(models.Model):
     data_aprovacao_inst = models.DateField(blank=True, null=True)
     parecer_cep = models.CharField(max_length=10, choices=PARECER_CEP_CHOICES, blank=True, null=True)
     data_parecer_cep = models.DateField(blank=True, null=True)
-    papel_HUB_multi = models.CharField(max_length=100, blank=True, null=True)
+    papel_HUB_multi = models.CharField(
+        max_length=100,
+        choices=PAPEL_HUB_CHOICES,
+        blank=True,
+        null=True,
+    )
     parceria_HUB_UNB = models.BooleanField(default=False)
     HUB_proponente = models.BooleanField(default=False)
     

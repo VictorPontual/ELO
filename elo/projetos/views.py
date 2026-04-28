@@ -350,7 +350,7 @@ class ProjetoForm(forms.ModelForm):
             'data_aprovacao_inst': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'parecer_cep': forms.Select(attrs={'class': 'form-control'}),
             'data_parecer_cep': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'papel_HUB_multi': forms.TextInput(attrs={'class': 'form-control'}),
+            'papel_HUB_multi': forms.Select(attrs={'class': 'form-control'}),
             'parceria_HUB_UNB': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'HUB_proponente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -373,7 +373,7 @@ class ProjetoForm(forms.ModelForm):
             'data_aprovacao_inst': 'Data de Aprovação Institucional',
             'parecer_cep': 'Parecer CEP',
             'data_parecer_cep': 'Data do Parecer CEP',
-            'papel_HUB_multi': 'Papel do HUB no Multicêntrico',
+            'papel_HUB_multi': 'Papel do HUB',
             'parceria_HUB_UNB': 'Parceria HUB/UNB',
             'HUB_proponente': 'HUB Proponente',
         }
@@ -552,7 +552,7 @@ class ProjetoEditForm(forms.ModelForm):
             'data_aprovacao_inst': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'parecer_cep': forms.Select(attrs={'class': 'form-control'}),
             'data_parecer_cep': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'papel_HUB_multi': forms.TextInput(attrs={'class': 'form-control'}),
+            'papel_HUB_multi': forms.Select(attrs={'class': 'form-control'}),
             'parceria_HUB_UNB': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'HUB_proponente': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -574,7 +574,7 @@ class ProjetoEditForm(forms.ModelForm):
             'data_aprovacao_inst': 'Data de Aprovação Institucional',
             'parecer_cep': 'Parecer CEP',
             'data_parecer_cep': 'Data do Parecer CEP',
-            'papel_HUB_multi': 'Papel do HUB no Multicêntrico',
+            'papel_HUB_multi': 'Papel do HUB',
             'parceria_HUB_UNB': 'Parceria HUB/UNB',
             'HUB_proponente': 'HUB Proponente',
         }
