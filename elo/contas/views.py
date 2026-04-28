@@ -29,16 +29,36 @@ class UserLoginView(LoginView):
 
 class PesquisadorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150, label='Nome')
-    email = forms.EmailField(label='E-mail')
     celular = forms.CharField(max_length=25, label='Celular', required=False)
-    numero_rede_pesquisa = forms.CharField(max_length=50, label='Numero do pesquisador na rede pesquisa')
+    email = forms.EmailField(label='E-mail')
+    preferencia_comunicacao_celular = forms.BooleanField(
+        label='Preferencia de contato por celular',
+        required=False,
+    )
+    preferencia_comunicacao_email = forms.BooleanField(
+        label='Preferencia de contato por e-mail',
+        required=False,
+    )
+
+    field_order = [
+        'nome',
+        'celular',
+        'preferencia_comunicacao_celular',
+        'email',
+        'preferencia_comunicacao_email',
+    ]
     
     class Meta:
         model = Pesquisador
-        fields = ['celular', 'numero_rede_pesquisa']
+        fields = [
+            'celular',
+            'preferencia_comunicacao_celular',
+            'preferencia_comunicacao_email',
+        ]
         labels = {
             'celular': 'Celular',
-            'numero_rede_pesquisa': 'Numero do pesquisador na rede pesquisa',
+            'preferencia_comunicacao_celular': 'Preferencia de contato por celular',
+            'preferencia_comunicacao_email': 'Preferencia de contato por e-mail',
         }
 
     def clean_email(self):

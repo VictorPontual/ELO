@@ -9,7 +9,37 @@
 <h2>Cadastro de Pesquisador</h2>
 <form method="post" class="cadastro-form">
     {% csrf_token %}
-    {{ form.as_p }}
+    {{ form.non_field_errors }}
+    <div class="field-group">
+        {{ form.nome.label_tag }}
+        {{ form.nome }}
+        {{ form.nome.errors }}
+    </div>
+    <div class="field-group">
+        {{ form.celular.label_tag }}
+        {{ form.celular }}
+        {{ form.celular.errors }}
+    </div>
+    <div class="field-group">
+        {{ form.email.label_tag }}
+        {{ form.email }}
+        {{ form.email.errors }}
+    </div>
+    <div class="field-group preference-group">
+        <p class="preference-title">Preferência de contato</p>
+        <div class="preference-options">
+            <label class="preference-option">
+                {{ form.preferencia_comunicacao_celular }}
+                <span>Celular</span>
+            </label>
+            <label class="preference-option">
+                {{ form.preferencia_comunicacao_email }}
+                <span>E-mail</span>
+            </label>
+        </div>
+        {{ form.preferencia_comunicacao_celular.errors }}
+        {{ form.preferencia_comunicacao_email.errors }}
+    </div>
     <button type="submit">Cadastrar</button>
 </form>
 {% endblock %}

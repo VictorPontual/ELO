@@ -201,7 +201,6 @@ def _garantir_tipos_pesquisa_iniciais():
 def _garantir_classificacoes_fixas():
     for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS:
         ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
-    ClassificacaoInstitucional.objects.exclude(nome_classificacao__in=CLASSIFICACOES_INSTITUCIONAIS_FIXAS).delete()
 
 
 def _garantir_especialidades_iniciais():
@@ -267,16 +266,15 @@ class ProjetoForm(forms.ModelForm):
         empty_label='-- Selecionar tipo --'
     )
 
-    classificacao = forms.ChoiceField(
-        choices=[('', '-- Selecionar classificação --')] + [
-            (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
-        ],
+    classificacao = forms.ModelChoiceField(
+        queryset=ClassificacaoInstitucional.objects.none(),
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'id_classificacao_select'
         }),
-        label='Classificação Institucional'
+        label='Classificação Institucional',
+        empty_label='-- Selecionar classificação --'
     )
 
     especialidade_proponente = forms.ModelChoiceField(
@@ -365,6 +363,7 @@ class ProjetoForm(forms.ModelForm):
         _garantir_especialidades_iniciais()
         _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['classificacao'].queryset = ClassificacaoInstitucional.objects.all().order_by('nome_classificacao')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
         self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
 
@@ -377,7 +376,7 @@ class ProjetoForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
             if classificacao_atual:
-                self.initial['classificacao'] = classificacao_atual.nome_classificacao
+                self.initial['classificacao'] = classificacao_atual
 
         especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
         if especialidade_atual:
@@ -449,12 +448,9 @@ class ProjetoForm(forms.ModelForm):
             projeto.save()
         
         # Processar classificação
-        classificacao_nome = self.cleaned_data.get('classificacao')
+        classificacao = self.cleaned_data.get('classificacao')
         projeto.classificacoes.clear()
-        if classificacao_nome:
-            classificacao, _ = ClassificacaoInstitucional.objects.get_or_create(
-                nome_classificacao=classificacao_nome
-            )
+        if classificacao:
             projeto.classificacoes.add(classificacao)
         
         return projeto
@@ -473,16 +469,15 @@ class ProjetoEditForm(forms.ModelForm):
         empty_label='-- Selecionar tipo --'
     )
 
-    classificacao = forms.ChoiceField(
-        choices=[('', '-- Selecionar classificação --')] + [
-            (nome, nome) for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS
-        ],
+    classificacao = forms.ModelChoiceField(
+        queryset=ClassificacaoInstitucional.objects.none(),
         required=False,
         widget=forms.Select(attrs={
             'class': 'form-control',
             'id': 'id_classificacao_select'
         }),
-        label='Classificação Institucional'
+        label='Classificação Institucional',
+        empty_label='-- Selecionar classificação --'
     )
 
     especialidade_proponente = forms.ModelChoiceField(
@@ -569,6 +564,7 @@ class ProjetoEditForm(forms.ModelForm):
         _garantir_especialidades_iniciais()
         _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['classificacao'].queryset = ClassificacaoInstitucional.objects.all().order_by('nome_classificacao')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
         self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
 
@@ -581,7 +577,7 @@ class ProjetoEditForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
             if classificacao_atual:
-                self.initial['classificacao'] = classificacao_atual.nome_classificacao
+                self.initial['classificacao'] = classificacao_atual
 
         especialidade_atual = getattr(self.instance, 'especialidade_proponente', None)
         if especialidade_atual:
@@ -653,12 +649,9 @@ class ProjetoEditForm(forms.ModelForm):
             projeto.save()
         
         # Processar classificação
-        classificacao_nome = self.cleaned_data.get('classificacao')
+        classificacao = self.cleaned_data.get('classificacao')
         projeto.classificacoes.clear()
-        if classificacao_nome:
-            classificacao, _ = ClassificacaoInstitucional.objects.get_or_create(
-                nome_classificacao=classificacao_nome
-            )
+        if classificacao:
             projeto.classificacoes.add(classificacao)
         
         return projeto

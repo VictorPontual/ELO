@@ -3,13 +3,40 @@
     margin: 0 auto;
 }
 
-.cadastro-form p {
-    margin-bottom: 1rem;
-}
-
 .cadastro-form label {
     display: block;
     margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.field-group {
+    margin-bottom: 1rem;
+}
+
+.preference-group {
+    padding: 0.75rem 1rem;
+    background: #f6f9fb;
+    border: 1px solid #e2e8ee;
+    border-radius: 12px;
+}
+
+.preference-title {
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.preference-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.preference-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     font-weight: 500;
     color: #2c3e50;
 }
@@ -23,6 +50,13 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
+}
+
+.cadastro-form input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #3498db;
 }
 
 .cadastro-form input:focus,
@@ -44,16 +78,3 @@
     margin-top: 1rem;
 }
 
-.cadastro-form p:last-of-type {
-    text-align: center;
-    margin-top: 1.5rem;
-}
-
-.cadastro-form p:last-of-type a {
-    color: #3498db;
-    text-decoration: none;
-}
-
-.cadastro-form p:last-of-type a:hover {
-    text-decoration: underline;
-}

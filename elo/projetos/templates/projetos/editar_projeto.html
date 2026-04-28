@@ -20,7 +20,7 @@
         {% endfor %}
     {% endif %}
 
-    <form method="post" class="projeto-form">
+    <form method="post" class="projeto-form" id="projetoForm">
         {% csrf_token %}
         
         <div class="form-section">
@@ -85,6 +85,7 @@
                 {% if form.classificacao.errors %}
                     <span class="error">{{ form.classificacao.errors.0 }}</span>
                 {% endif %}
+                <small class="form-text text-muted">Selecione uma classificacao existente ou crie uma nova</small>
             </div>
             
         </div>
@@ -219,10 +220,6 @@
             </div>
         </div>
 
-        <div class="form-actions">
-            <a href="{% url 'lista_projetos' %}" class="btn-cancelar">Cancelar</a>
-            <button type="submit" class="btn-salvar">Salvar Alterações</button>
-        </div>
     </form>
 
     <!-- Seção de Gerenciamento de Participantes -->
@@ -236,7 +233,6 @@
                     <thead>
                         <tr>
                             <th>Nome</th>
-                            <th>Email</th>
                             <th>Função</th>
                             <th>Ações</th>
                         </tr>
@@ -245,7 +241,6 @@
                         {% for participacao in participacoes %}
                         <tr>
                             <td>{{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}</td>
-                            <td>{{ participacao.pesquisador.user.email }}</td>
                             <td>{{ participacao.atividade }}</td>
                             <td>
                                 <form method="post" action="{% url 'remover_pesquisador' projeto.sig_id_projeto participacao.id %}" class="form-inline" onsubmit="return confirm('Deseja remover este pesquisador do projeto?');">
@@ -429,6 +424,22 @@
         </div>
     </div>
 
+    <!-- Modal para criar nova classificacao institucional -->
+    <div id="modalCriarClassificacao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Classificacao Institucional</h2>
+            <div class="form-group">
+                <label for="nomeClassificacaoInput">Nome da Classificacao *</label>
+                <input type="text" id="nomeClassificacaoInput" placeholder="Ex: Alta complexidade" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarClassificacao" class="btn-primary">Criar Classificacao</button>
+                <button type="button" id="botaoCancelarClassificacao" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para criar novo tipo de pesquisa -->
     <div id="modalCriarTipoPesquisa" class="modal">
         <div class="modal-content">
@@ -477,6 +488,11 @@
         </div>
     </div>
 </div>
+
+<div class="form-actions">
+    <a href="{% url 'lista_projetos' %}" class="btn-cancelar">Cancelar</a>
+    <button type="submit" class="btn-salvar" form="projetoForm">Salvar Alterações</button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -486,6 +502,7 @@
     // Passar URLs dos endpoints AJAX para o JavaScript
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
     window.urlCriarHospital = "{% url 'criar_hospital_ajax' %}";
+    window.urlCriarClassificacao = "{% url 'criar_classificacao_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";

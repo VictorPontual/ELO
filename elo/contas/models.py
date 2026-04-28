@@ -13,7 +13,8 @@ class Pesquisador(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     formacao = models.CharField(max_length=15, choices=FORMACAO_CHOICES, default='graduacao')
     celular = models.CharField(max_length=25, blank=True, null=True)
-    numero_rede_pesquisa = models.CharField(max_length=50, blank=True, null=True)
+    preferencia_comunicacao_celular = models.BooleanField(default=False)
+    preferencia_comunicacao_email = models.BooleanField(default=False)
     
     class Meta:
         db_table = 'pesquisador'
