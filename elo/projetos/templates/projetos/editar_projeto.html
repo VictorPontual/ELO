@@ -143,6 +143,17 @@
                 {% endif %}
             </div>
 
+            <div class="form-group" id="grupoFormalizacaoInstrumento" style="display: none;">
+                <div class="form-check">
+                    {{ form.formalizacao_instrumento }}
+                    <label for="{{ form.formalizacao_instrumento.id_for_label }}">{{ form.formalizacao_instrumento.label }}</label>
+                </div>
+                {% if form.formalizacao_instrumento.errors %}
+                    <span class="error">{{ form.formalizacao_instrumento.errors.0 }}</span>
+                {% endif %}
+                <small class="form-text text-muted">Marque este campo quando existir alguma fonte de fomento no projeto.</small>
+            </div>
+
             <div class="form-group">
                 <label for="{{ form.papel_HUB_multi.id_for_label }}">{{ form.papel_HUB_multi.label }}</label>
                 {{ form.papel_HUB_multi }}

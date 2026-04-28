@@ -306,7 +306,7 @@ class ProjetoForm(forms.ModelForm):
         fields = [
             'sig_id_projeto', 'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise', 
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
-            'especialidade_proponente', 'instituicao_proponente', 'tipo_fomento', 'linhas_pesq', 'inicio_coleta',
+            'especialidade_proponente', 'instituicao_proponente', 'tipo_fomento', 'formalizacao_instrumento', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
             'data_parecer_cep', 'papel_HUB_multi', 'parceria_HUB_UNB',
             'HUB_proponente'
@@ -323,6 +323,7 @@ class ProjetoForm(forms.ModelForm):
             'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
             'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'tipo_fomento': forms.Select(attrs={'class': 'form-control'}),
+            'formalizacao_instrumento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -345,6 +346,7 @@ class ProjetoForm(forms.ModelForm):
             'especialidade_proponente': 'Especialidade do Proponente',
             'instituicao_proponente': 'Instituição Proponente',
             'tipo_fomento': 'Tipo de Fomento',
+            'formalizacao_instrumento': 'Formalização de Fomento',
             'linhas_pesq': 'Linhas de Pesquisa',
             'inicio_coleta': 'Início da Coleta',
             'fim_coleta': 'Fim da Coleta',
@@ -416,6 +418,18 @@ class ProjetoForm(forms.ModelForm):
                     'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
                 )
 
+        tipo_fomento = cleaned_data.get('tipo_fomento')
+        formalizacao_instrumento = cleaned_data.get('formalizacao_instrumento')
+
+        if tipo_fomento and not formalizacao_instrumento:
+            self.add_error(
+                'formalizacao_instrumento',
+                'Marque este campo quando houver fonte de fomento informada.',
+            )
+
+        if not tipo_fomento:
+            cleaned_data['formalizacao_instrumento'] = False
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -429,6 +443,7 @@ class ProjetoForm(forms.ModelForm):
 
         instituicao = self.cleaned_data.get('instituicao_proponente')
         projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
+        projeto.formalizacao_instrumento = bool(self.cleaned_data.get('formalizacao_instrumento'))
 
         if commit:
             projeto.save()
@@ -497,7 +512,7 @@ class ProjetoEditForm(forms.ModelForm):
         fields = [
             'sig_id_pesq', 'titulo', 'data_ent_sig', 'data_lib_analise',
             'tipo_pesq', 'desenvolvimento_tecnologico', 'multicentrico',
-            'especialidade_proponente', 'instituicao_proponente', 'tipo_fomento', 'linhas_pesq', 'inicio_coleta',
+            'especialidade_proponente', 'instituicao_proponente', 'tipo_fomento', 'formalizacao_instrumento', 'linhas_pesq', 'inicio_coleta',
             'fim_coleta', 'data_aprovacao_inst', 'parecer_cep',
             'data_parecer_cep', 'papel_HUB_multi', 'parceria_HUB_UNB',
             'HUB_proponente'
@@ -513,6 +528,7 @@ class ProjetoEditForm(forms.ModelForm):
             'especialidade_proponente': forms.Select(attrs={'class': 'form-control'}),
             'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'tipo_fomento': forms.Select(attrs={'class': 'form-control'}),
+            'formalizacao_instrumento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -534,6 +550,7 @@ class ProjetoEditForm(forms.ModelForm):
             'especialidade_proponente': 'Especialidade do Proponente',
             'instituicao_proponente': 'Instituição Proponente',
             'tipo_fomento': 'Tipo de Fomento',
+            'formalizacao_instrumento': 'Formalização de Fomento',
             'linhas_pesq': 'Linhas de Pesquisa',
             'inicio_coleta': 'Início da Coleta',
             'fim_coleta': 'Fim da Coleta',
@@ -605,6 +622,18 @@ class ProjetoEditForm(forms.ModelForm):
                     'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
                 )
 
+        tipo_fomento = cleaned_data.get('tipo_fomento')
+        formalizacao_instrumento = cleaned_data.get('formalizacao_instrumento')
+
+        if tipo_fomento and not formalizacao_instrumento:
+            self.add_error(
+                'formalizacao_instrumento',
+                'Marque este campo quando houver fonte de fomento informada.',
+            )
+
+        if not tipo_fomento:
+            cleaned_data['formalizacao_instrumento'] = False
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -618,6 +647,7 @@ class ProjetoEditForm(forms.ModelForm):
 
         instituicao = self.cleaned_data.get('instituicao_proponente')
         projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
+        projeto.formalizacao_instrumento = bool(self.cleaned_data.get('formalizacao_instrumento'))
 
         if commit:
             projeto.save()

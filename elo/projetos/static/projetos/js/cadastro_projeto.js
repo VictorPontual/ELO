@@ -3,6 +3,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!form) {
         return;
     }
+
+    const tipoFomento = document.querySelector('#id_tipo_fomento');
+    const grupoFormalizacaoInstrumento = document.querySelector('#grupoFormalizacaoInstrumento');
+    const formalizacaoInstrumento = document.querySelector('#id_formalizacao_instrumento');
     
     // Validação básica antes de enviar
     form.addEventListener('submit', function(e) {
@@ -16,6 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Por favor, preencha o título do projeto.');
             titulo.focus();
+            return false;
+        }
+
+        if (tipoFomento && tipoFomento.value && formalizacaoInstrumento && !formalizacaoInstrumento.checked) {
+            e.preventDefault();
+            alert('Marque a Formalização de Fomento quando houver fonte de fomento.');
+            formalizacaoInstrumento.focus();
             return false;
         }
 
@@ -72,6 +83,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const dataEntSig = document.querySelector('#id_data_ent_sig');
     const dataLibAnalise = document.querySelector('#id_data_lib_analise');
     const dataAprovacaoInst = document.querySelector('#id_data_aprovacao_inst');
+
+    function atualizarFormalizacaoInstrumento() {
+        if (!tipoFomento || !grupoFormalizacaoInstrumento || !formalizacaoInstrumento) {
+            return;
+        }
+
+        const deveExibir = Boolean(tipoFomento.value);
+        grupoFormalizacaoInstrumento.style.display = deveExibir ? 'block' : 'none';
+
+        if (!deveExibir) {
+            formalizacaoInstrumento.checked = false;
+        }
+    }
+
+    if (tipoFomento) {
+        tipoFomento.addEventListener('change', atualizarFormalizacaoInstrumento);
+        atualizarFormalizacaoInstrumento();
+    }
     
     if (inicioColeta && fimColeta) {
         fimColeta.addEventListener('change', function() {

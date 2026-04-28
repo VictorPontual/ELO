@@ -99,6 +99,7 @@ class Projeto(models.Model):
     especialidade_proponente = models.CharField(max_length=255, blank=True, null=True)
     instituicao_proponente = models.CharField(max_length=255, blank=True, null=True)
     tipo_fomento = models.CharField(max_length=50, choices=TIPO_FOMENTO_CHOICES, blank=True, null=True)
+    formalizacao_instrumento = models.BooleanField(default=False)
     linhas_pesq = models.TextField(blank=True, null=True)
     inicio_coleta = models.DateField(blank=True, null=True)
     fim_coleta = models.DateField(blank=True, null=True)
