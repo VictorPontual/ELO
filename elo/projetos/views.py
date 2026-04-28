@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador
 from contas.models import Pesquisador
 from django import forms
 
@@ -113,6 +113,17 @@ CLASSIFICACOES_INSTITUCIONAIS_FIXAS = [
     'Pesquisa QUE NÃO ENVOLVE seres humanos',
 ]
 
+FUNCOES_PARTICIPACAO_INICIAIS = [
+    'Pesquisador principal',
+    'Sub-investigador',
+    'Coordenador',
+    'Equipe de pesquisa',
+]
+
+VINCULOS_PARTICIPACAO_INICIAIS = [
+    'Não informado',
+]
+
 UNIDADES_ORGANIZACIONAIS_INICIAIS = [
     'GERÊNCIA DE ATENÇÃO À SAÚDE',
     'Unidade Multiprofissional',
@@ -219,6 +230,17 @@ def _garantir_unidades_iniciais():
     for nome in UNIDADES_ORGANIZACIONAIS_INICIAIS:
         Unidade.objects.get_or_create(nome_unidade=nome)
     Unidade.objects.exclude(nome_unidade__in=UNIDADES_ORGANIZACIONAIS_INICIAIS).delete()
+
+
+def _garantir_funcoes_participacao_iniciais():
+    for nome in FUNCOES_PARTICIPACAO_INICIAIS:
+        FuncaoPesquisador.objects.get_or_create(nome_funcao=nome)
+    FuncaoPesquisador.objects.exclude(nome_funcao__in=FUNCOES_PARTICIPACAO_INICIAIS).delete()
+
+
+def _garantir_vinculos_participacao_iniciais():
+    for nome in VINCULOS_PARTICIPACAO_INICIAIS:
+        VinculoPesquisador.objects.get_or_create(nome_vinculo=nome)
 
 
 def _formatar_trimestre(data):
@@ -658,20 +680,38 @@ class ProjetoEditForm(forms.ModelForm):
 
 
 class ParticipacaoForm(forms.ModelForm):
+    vinculo = forms.ModelChoiceField(
+        queryset=VinculoPesquisador.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_vinculo_select'}),
+        label='Vínculo com o projeto',
+        empty_label='-- Selecionar vínculo --',
+    )
+    funcao = forms.ModelChoiceField(
+        queryset=FuncaoPesquisador.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_funcao_select'}),
+        label='Função no projeto',
+        empty_label='-- Selecionar função --',
+    )
+
     class Meta:
         model = Participacao
-        fields = ['pesquisador', 'atividade']
+        fields = ['pesquisador', 'vinculo', 'funcao']
         widgets = {
             'pesquisador': forms.Select(attrs={'class': 'form-control'}),
-            'atividade': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Líder, Pesquisador, Colaborador'}),
         }
         labels = {
             'pesquisador': 'Pesquisador',
-            'atividade': 'Função/Atividade',
         }
     
     def __init__(self, *args, projeto=None, **kwargs):
         super().__init__(*args, **kwargs)
+        _garantir_funcoes_participacao_iniciais()
+        _garantir_vinculos_participacao_iniciais()
+
+        self.fields['vinculo'].queryset = VinculoPesquisador.objects.all().order_by('nome_vinculo')
+        self.fields['funcao'].queryset = FuncaoPesquisador.objects.all().order_by('nome_funcao')
         if projeto:
             # Excluir pesquisadores que já participam do projeto
             participantes_ids = Participacao.objects.filter(projeto=projeto).values_list('pesquisador_id', flat=True)
@@ -848,6 +888,48 @@ def criar_instituicao_ajax(request):
 
 
 @login_required
+def criar_vinculo_ajax(request):
+    """View AJAX para criar novo vínculo do pesquisador"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_vinculo', '').strip()
+        if nome:
+            vinculo, created = VinculoPesquisador.objects.get_or_create(nome_vinculo=nome)
+            return JsonResponse({
+                'success': True,
+                'id': vinculo.pk,
+                'nome': vinculo.nome_vinculo,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome do vínculo não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_funcao_ajax(request):
+    """View AJAX para criar nova função do pesquisador"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_funcao', '').strip()
+        if nome:
+            funcao, created = FuncaoPesquisador.objects.get_or_create(nome_funcao=nome)
+            return JsonResponse({
+                'success': True,
+                'id': funcao.pk,
+                'nome': funcao.nome_funcao,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da função não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
 def lista_projetos(request):
     # Se o usuário for admin/staff, mostra todos os projetos
     if request.user.is_staff or request.user.is_superuser:
@@ -887,10 +969,12 @@ def cadastro_projeto(request):
             # Adicionar o usuário atual como líder do projeto
             try:
                 pesquisador = Pesquisador.objects.get(user=request.user)
+                _garantir_funcoes_participacao_iniciais()
+                funcao_lider, _ = FuncaoPesquisador.objects.get_or_create(nome_funcao='Líder')
                 Participacao.objects.create(
                     pesquisador=pesquisador,
                     projeto=projeto,
-                    atividade='Líder'
+                    funcao=funcao_lider
                 )
             except Pesquisador.DoesNotExist:
                 messages.warning(request, 'Projeto criado, mas você não possui um perfil de pesquisador.')

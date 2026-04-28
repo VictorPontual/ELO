@@ -61,6 +61,28 @@ class HospitalHubBrasil(models.Model):
         verbose_name = 'Hospital da Rede HUBrasil'
         verbose_name_plural = 'Hospitais da Rede HUBrasil'
 
+
+class VinculoPesquisador(models.Model):
+    nome_vinculo = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_vinculo
+
+    class Meta:
+        verbose_name = 'Vínculo do Pesquisador'
+        verbose_name_plural = 'Vínculos do Pesquisador'
+
+
+class FuncaoPesquisador(models.Model):
+    nome_funcao = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_funcao
+
+    class Meta:
+        verbose_name = 'Função do Pesquisador'
+        verbose_name_plural = 'Funções do Pesquisador'
+
 class Projeto(models.Model):
     DESENVOLVIMENTO_TECNOLOGICO_CHOICES = [
         ('sim', 'Sim'),
@@ -133,7 +155,8 @@ class Fomento(models.Model):
 class Participacao(models.Model):
     pesquisador = models.ForeignKey(Pesquisador, on_delete=models.CASCADE)
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE)
-    atividade = models.CharField(max_length=255)
+    vinculo = models.ForeignKey(VinculoPesquisador, on_delete=models.SET_NULL, blank=True, null=True)
+    funcao = models.ForeignKey(FuncaoPesquisador, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         unique_together = ('pesquisador', 'projeto')

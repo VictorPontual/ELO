@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('unidade', 'modalCriarUnidade', 'id_unidade_select', 'nomeUnidadeInput', 'botaoCriarUnidade', 'botaoCancelarUnidade');
     setupDropdownModal('hospital', 'modalCriarHospital', 'id_hospital_select', 'nomeHospitalInput', 'botaoCriarHospital', 'botaoCancelarHospital');
     setupDropdownModal('classificacao', 'modalCriarClassificacao', 'id_classificacao_select', 'nomeClassificacaoInput', 'botaoCriarClassificacao', 'botaoCancelarClassificacao');
+    setupDropdownModal('vinculo', 'modalCriarVinculo', 'id_vinculo_select', 'nomeVinculoInput', 'botaoCriarVinculo', 'botaoCancelarVinculo');
+    setupDropdownModal('funcao', 'modalCriarFuncao', 'id_funcao_select', 'nomeFuncaoInput', 'botaoCriarFuncao', 'botaoCancelarFuncao');
     setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
     setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
     setupDropdownModal('instituicao', 'modalCriarInstituicao', 'id_instituicao_select', 'nomeInstituicaoInput', 'botaoCriarInstituicao', 'botaoCancelarInstituicao');
@@ -23,6 +25,8 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
         unidade: '+ Nova Unidade',
         hospital: '+ Novo Hospital',
         classificacao: '+ Nova Classificacao',
+        vinculo: '+ Novo Vinculo',
+        funcao: '+ Nova Funcao',
         tipo_pesquisa: '+ Novo Tipo de Pesquisa',
         especialidade: '+ Nova Especialidade',
         instituicao: '+ Nova Instituição'
@@ -102,6 +106,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         unidade: 'unidade',
         hospital: 'hospital',
         classificacao: 'classificacao',
+        vinculo: 'vinculo',
+        funcao: 'funcao',
         tipo_pesquisa: 'tipo de pesquisa',
         especialidade: 'especialidade',
         instituicao: 'instituição'
@@ -134,6 +140,14 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarClassificacao;
         paramName = 'nome_classificacao';
         textoBotao = 'Criar Classificacao';
+    } else if (type === 'vinculo') {
+        endpoint = window.urlCriarVinculo;
+        paramName = 'nome_vinculo';
+        textoBotao = 'Criar Vinculo';
+    } else if (type === 'funcao') {
+        endpoint = window.urlCriarFuncao;
+        paramName = 'nome_funcao';
+        textoBotao = 'Criar Funcao';
     } else if (type === 'tipo_pesquisa') {
         endpoint = window.urlCriarTipoPesquisa;
         paramName = 'nome_tipo';
@@ -180,6 +194,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
                 unidade: 'Unidade criada com sucesso!',
                 hospital: 'Hospital criado com sucesso!',
                 classificacao: 'Classificacao criada com sucesso!',
+                vinculo: 'Vinculo criado com sucesso!',
+                funcao: 'Funcao criada com sucesso!',
                 tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
                 especialidade: 'Especialidade criada com sucesso!',
                 instituicao: 'Instituição criada com sucesso!'

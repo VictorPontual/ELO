@@ -27,7 +27,7 @@
                 <td>{{ projeto.titulo }}</td>
                 <td>
                     {% for participacao in projeto.participacao_set.all %}
-                        {% if participacao.atividade == 'Líder' %}
+                        {% if participacao.funcao and participacao.funcao.nome_funcao == 'Líder' %}
                             {{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}
                         {% endif %}
                     {% endfor %}
@@ -168,7 +168,12 @@
                     {% for participacao in projeto.participacao_set.all %}
                         <li>
                             <strong>{{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}</strong>
-                            - {{ participacao.atividade }}
+                            {% if participacao.funcao %}
+                                - {{ participacao.funcao.nome_funcao }}
+                            {% endif %}
+                            {% if participacao.vinculo %}
+                                ({{ participacao.vinculo.nome_vinculo }})
+                            {% endif %}
                         </li>
                     {% empty %}
                         <li>Nenhum participante cadastrado</li>

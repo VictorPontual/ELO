@@ -17,4 +17,6 @@ urlpatterns = [
     path('ajax/criar-tipo-pesquisa/', views.criar_tipo_pesquisa_ajax, name='criar_tipo_pesquisa_ajax'),
     path('ajax/criar-especialidade/', views.criar_especialidade_ajax, name='criar_especialidade_ajax'),
     path('ajax/criar-instituicao/', views.criar_instituicao_ajax, name='criar_instituicao_ajax'),
+    path('ajax/criar-vinculo/', views.criar_vinculo_ajax, name='criar_vinculo_ajax'),
+    path('ajax/criar-funcao/', views.criar_funcao_ajax, name='criar_funcao_ajax'),
 ]

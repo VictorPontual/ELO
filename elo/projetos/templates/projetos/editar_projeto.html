@@ -233,6 +233,7 @@
                     <thead>
                         <tr>
                             <th>Nome</th>
+                            <th>Vínculo</th>
                             <th>Função</th>
                             <th>Ações</th>
                         </tr>
@@ -241,7 +242,8 @@
                         {% for participacao in participacoes %}
                         <tr>
                             <td>{{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}</td>
-                            <td>{{ participacao.atividade }}</td>
+                            <td>{{ participacao.vinculo.nome_vinculo|default:"-" }}</td>
+                            <td>{{ participacao.funcao.nome_funcao|default:"-" }}</td>
                             <td>
                                 <form method="post" action="{% url 'remover_pesquisador' projeto.sig_id_projeto participacao.id %}" class="form-inline" onsubmit="return confirm('Deseja remover este pesquisador do projeto?');">
                                     {% csrf_token %}
@@ -275,10 +277,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="{{ participacao_form.atividade.id_for_label }}">{{ participacao_form.atividade.label }}</label>
-                        {{ participacao_form.atividade }}
-                        {% if participacao_form.atividade.errors %}
-                            <span class="error">{{ participacao_form.atividade.errors.0 }}</span>
+                        <label for="{{ participacao_form.vinculo.id_for_label }}">{{ participacao_form.vinculo.label }}</label>
+                        {{ participacao_form.vinculo }}
+                        {% if participacao_form.vinculo.errors %}
+                            <span class="error">{{ participacao_form.vinculo.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ participacao_form.funcao.id_for_label }}">{{ participacao_form.funcao.label }}</label>
+                        {{ participacao_form.funcao }}
+                        {% if participacao_form.funcao.errors %}
+                            <span class="error">{{ participacao_form.funcao.errors.0 }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -424,6 +434,38 @@
         </div>
     </div>
 
+    <!-- Modal para criar novo vínculo -->
+    <div id="modalCriarVinculo" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Novo Vínculo</h2>
+            <div class="form-group">
+                <label for="nomeVinculoInput">Nome do Vínculo *</label>
+                <input type="text" id="nomeVinculoInput" placeholder="Ex: Colaborador externo" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarVinculo" class="btn-primary">Criar Vínculo</button>
+                <button type="button" id="botaoCancelarVinculo" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para criar nova função -->
+    <div id="modalCriarFuncao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Função</h2>
+            <div class="form-group">
+                <label for="nomeFuncaoInput">Nome da Função *</label>
+                <input type="text" id="nomeFuncaoInput" placeholder="Ex: Pesquisador" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarFuncao" class="btn-primary">Criar Função</button>
+                <button type="button" id="botaoCancelarFuncao" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para criar nova classificacao institucional -->
     <div id="modalCriarClassificacao" class="modal">
         <div class="modal-content">
@@ -506,5 +548,7 @@
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";
+    window.urlCriarVinculo = "{% url 'criar_vinculo_ajax' %}";
+    window.urlCriarFuncao = "{% url 'criar_funcao_ajax' %}";
 </script>
 {% endblock %}

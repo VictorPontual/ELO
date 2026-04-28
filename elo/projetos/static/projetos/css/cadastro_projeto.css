@@ -300,6 +300,7 @@ textarea.form-control {
 
 .participacao-form .form-row {
     margin-bottom: 20px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .btn-adicionar {
