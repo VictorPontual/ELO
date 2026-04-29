@@ -29,6 +29,17 @@ class TipoPesquisa(models.Model):
         verbose_name_plural = 'Tipos de Pesquisa'
 
 
+class LinhaPesquisa(models.Model):
+    nome_linha = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_linha
+
+    class Meta:
+        verbose_name = 'Linha de Pesquisa'
+        verbose_name_plural = 'Linhas de Pesquisa'
+
+
 class EspecialidadeProponente(models.Model):
     nome_especialidade = models.CharField(max_length=255, primary_key=True)
 

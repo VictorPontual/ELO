@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, LinhaPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador
 from contas.models import Pesquisador
 from django import forms
 
@@ -15,6 +15,24 @@ TIPOS_PESQUISA_INICIAIS = [
     'Iniciativa de docentes',
     'pesquisa clínica patrocinada',
     'outros',
+]
+
+LINHAS_PESQUISA_INICIAIS = [
+    'Doenças cardiovasculares',
+    'Doenças do sistema nervoso',
+    'Doenças em nefrologia',
+    'Doenças em oncologia e onco-hematologia',
+    'Doenças infecciosas e parasitárias',
+    'Doenças inflamatórias e imunomediadas',
+    'Doenças respiratórias',
+    'Ensino em saúde',
+    'Estudos em endocrinologia e transtornos do metabolismo',
+    'Geriatria, gerontologia, envelhecimento e longevidade',
+    'Saúde Bucal',
+    'Saúde da mulher',
+    'Saúde mental',
+    'Transplante de órgãos, células e tecidos',
+    'Outras',
 ]
 
 ESPECIALIDADES_PROPONENTE_INICIAIS = [
@@ -209,6 +227,11 @@ def _garantir_tipos_pesquisa_iniciais():
     TipoPesquisa.objects.exclude(nome_tipo__in=TIPOS_PESQUISA_INICIAIS).delete()
 
 
+def _garantir_linhas_pesquisa_iniciais():
+    for nome in LINHAS_PESQUISA_INICIAIS:
+        LinhaPesquisa.objects.get_or_create(nome_linha=nome)
+
+
 def _garantir_classificacoes_fixas():
     for nome in CLASSIFICACOES_INSTITUCIONAIS_FIXAS:
         ClassificacaoInstitucional.objects.get_or_create(nome_classificacao=nome)
@@ -320,6 +343,28 @@ class ProjetoForm(forms.ModelForm):
         label='Instituição Proponente',
         empty_label='-- Selecionar instituição --'
     )
+
+    linhas_pesq = forms.ModelChoiceField(
+        queryset=LinhaPesquisa.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_linha_pesquisa_select'
+        }),
+        label='Linhas de Pesquisa',
+        empty_label='-- Selecionar linha --'
+    )
+
+    linhas_pesq = forms.ModelChoiceField(
+        queryset=LinhaPesquisa.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'id': 'id_linha_pesquisa_select'
+        }),
+        label='Linhas de Pesquisa',
+        empty_label='-- Selecionar linha --'
+    )
     
     class Meta:
         model = Projeto
@@ -344,7 +389,7 @@ class ProjetoForm(forms.ModelForm):
             'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'tipo_fomento': forms.Select(attrs={'class': 'form-control'}),
             'formalizacao_instrumento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'linhas_pesq': forms.Select(attrs={'class': 'form-control'}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_aprovacao_inst': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -381,10 +426,12 @@ class ProjetoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _garantir_tipos_pesquisa_iniciais()
+        _garantir_linhas_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
         _garantir_especialidades_iniciais()
         _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['linhas_pesq'].queryset = LinhaPesquisa.objects.all().order_by('nome_linha')
         self.fields['classificacao'].queryset = ClassificacaoInstitucional.objects.all().order_by('nome_classificacao')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
         self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
@@ -394,6 +441,11 @@ class ProjetoForm(forms.ModelForm):
             tipo_obj = TipoPesquisa.objects.filter(nome_tipo=tipo_pesq_atual).first()
             if tipo_obj:
                 self.initial['tipo_pesq'] = tipo_obj
+
+        linha_atual = getattr(self.instance, 'linhas_pesq', None)
+        if linha_atual:
+            linha_obj, _ = LinhaPesquisa.objects.get_or_create(nome_linha=linha_atual)
+            self.initial['linhas_pesq'] = linha_obj
 
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
@@ -458,6 +510,12 @@ class ProjetoForm(forms.ModelForm):
 
         tipo_pesq = self.cleaned_data.get('tipo_pesq')
         projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
+
+        linha_pesquisa = self.cleaned_data.get('linhas_pesq')
+        projeto.linhas_pesq = linha_pesquisa.nome_linha if linha_pesquisa else None
+
+        linha_pesquisa = self.cleaned_data.get('linhas_pesq')
+        projeto.linhas_pesq = linha_pesquisa.nome_linha if linha_pesquisa else None
 
         especialidade = self.cleaned_data.get('especialidade_proponente')
         projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
@@ -546,7 +604,7 @@ class ProjetoEditForm(forms.ModelForm):
             'instituicao_proponente': forms.Select(attrs={'class': 'form-control'}),
             'tipo_fomento': forms.Select(attrs={'class': 'form-control'}),
             'formalizacao_instrumento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'linhas_pesq': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'linhas_pesq': forms.Select(attrs={'class': 'form-control'}),
             'inicio_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fim_coleta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_aprovacao_inst': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -582,10 +640,12 @@ class ProjetoEditForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _garantir_tipos_pesquisa_iniciais()
+        _garantir_linhas_pesquisa_iniciais()
         _garantir_classificacoes_fixas()
         _garantir_especialidades_iniciais()
         _garantir_instituicoes_iniciais()
         self.fields['tipo_pesq'].queryset = TipoPesquisa.objects.all().order_by('nome_tipo')
+        self.fields['linhas_pesq'].queryset = LinhaPesquisa.objects.all().order_by('nome_linha')
         self.fields['classificacao'].queryset = ClassificacaoInstitucional.objects.all().order_by('nome_classificacao')
         self.fields['especialidade_proponente'].queryset = EspecialidadeProponente.objects.all().order_by('nome_especialidade')
         self.fields['instituicao_proponente'].queryset = InstituicaoProponente.objects.all().order_by('nome_instituicao')
@@ -595,6 +655,11 @@ class ProjetoEditForm(forms.ModelForm):
             tipo_obj = TipoPesquisa.objects.filter(nome_tipo=tipo_pesq_atual).first()
             if tipo_obj:
                 self.initial['tipo_pesq'] = tipo_obj
+
+        linha_atual = getattr(self.instance, 'linhas_pesq', None)
+        if linha_atual:
+            linha_obj, _ = LinhaPesquisa.objects.get_or_create(nome_linha=linha_atual)
+            self.initial['linhas_pesq'] = linha_obj
 
         if self.instance and self.instance.pk:
             classificacao_atual = self.instance.classificacoes.first()
@@ -841,6 +906,27 @@ def criar_tipo_pesquisa_ajax(request):
             return JsonResponse({
                 'success': False,
                 'error': 'Nome do tipo de pesquisa não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_linha_pesquisa_ajax(request):
+    """View AJAX para criar nova linha de pesquisa"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_linha', '').strip()
+        if nome:
+            linha, created = LinhaPesquisa.objects.get_or_create(nome_linha=nome)
+            return JsonResponse({
+                'success': True,
+                'id': linha.pk,
+                'nome': linha.nome_linha,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome da linha de pesquisa não pode estar vazio'
             }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 

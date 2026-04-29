@@ -169,6 +169,7 @@
                 {% if form.linhas_pesq.errors %}
                     <span class="error">{{ form.linhas_pesq.errors.0 }}</span>
                 {% endif %}
+                <small class="form-text text-muted">Selecione uma linha existente ou crie uma nova</small>
             </div>
         </div>
 
@@ -498,6 +499,22 @@
         </div>
     </div>
 
+    <!-- Modal para criar nova linha de pesquisa -->
+    <div id="modalCriarLinhaPesquisa" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Linha de Pesquisa</h2>
+            <div class="form-group">
+                <label for="nomeLinhaPesquisaInput">Nome da Linha de Pesquisa *</label>
+                <input type="text" id="nomeLinhaPesquisaInput" placeholder="Ex: Doenças respiratórias" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarLinhaPesquisa" class="btn-primary">Criar Linha de Pesquisa</button>
+                <button type="button" id="botaoCancelarLinhaPesquisa" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para criar nova especialidade -->
     <div id="modalCriarEspecialidade" class="modal">
         <div class="modal-content">
@@ -546,6 +563,7 @@
     window.urlCriarHospital = "{% url 'criar_hospital_ajax' %}";
     window.urlCriarClassificacao = "{% url 'criar_classificacao_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
+    window.urlCriarLinhaPesquisa = "{% url 'criar_linha_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";
     window.urlCriarVinculo = "{% url 'criar_vinculo_ajax' %}";

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('vinculo', 'modalCriarVinculo', 'id_vinculo_select', 'nomeVinculoInput', 'botaoCriarVinculo', 'botaoCancelarVinculo');
     setupDropdownModal('funcao', 'modalCriarFuncao', 'id_funcao_select', 'nomeFuncaoInput', 'botaoCriarFuncao', 'botaoCancelarFuncao');
     setupDropdownModal('tipo_pesquisa', 'modalCriarTipoPesquisa', 'id_tipo_pesq_select', 'nomeTipoPesquisaInput', 'botaoCriarTipoPesquisa', 'botaoCancelarTipoPesquisa');
+    setupDropdownModal('linha_pesquisa', 'modalCriarLinhaPesquisa', 'id_linha_pesquisa_select', 'nomeLinhaPesquisaInput', 'botaoCriarLinhaPesquisa', 'botaoCancelarLinhaPesquisa');
     setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
     setupDropdownModal('instituicao', 'modalCriarInstituicao', 'id_instituicao_select', 'nomeInstituicaoInput', 'botaoCriarInstituicao', 'botaoCancelarInstituicao');
 });
@@ -28,6 +29,7 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
         vinculo: '+ Novo Vinculo',
         funcao: '+ Nova Funcao',
         tipo_pesquisa: '+ Novo Tipo de Pesquisa',
+        linha_pesquisa: '+ Nova Linha de Pesquisa',
         especialidade: '+ Nova Especialidade',
         instituicao: '+ Nova Instituição'
     };
@@ -109,6 +111,7 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         vinculo: 'vinculo',
         funcao: 'funcao',
         tipo_pesquisa: 'tipo de pesquisa',
+        linha_pesquisa: 'linha de pesquisa',
         especialidade: 'especialidade',
         instituicao: 'instituição'
     };
@@ -152,6 +155,10 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarTipoPesquisa;
         paramName = 'nome_tipo';
         textoBotao = 'Criar Tipo de Pesquisa';
+    } else if (type === 'linha_pesquisa') {
+        endpoint = window.urlCriarLinhaPesquisa;
+        paramName = 'nome_linha';
+        textoBotao = 'Criar Linha de Pesquisa';
     } else if (type === 'instituicao') {
         endpoint = window.urlCriarInstituicao;
         paramName = 'nome_instituicao';
@@ -197,6 +204,7 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
                 vinculo: 'Vinculo criado com sucesso!',
                 funcao: 'Funcao criada com sucesso!',
                 tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
+                linha_pesquisa: 'Linha de pesquisa criada com sucesso!',
                 especialidade: 'Especialidade criada com sucesso!',
                 instituicao: 'Instituição criada com sucesso!'
             };
