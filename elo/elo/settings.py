@@ -137,3 +137,20 @@ STATICFILES_DIRS = [
 LOGIN_REDIRECT_URL = 'lista_projetos'
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'login'
+
+
+# E-mail (usado pelos avisos periódicos).
+# Se EMAIL_HOST estiver definido no .env, usa SMTP; caso contrário, escreve os
+# e-mails no console (útil em desenvolvimento, sem credenciais).
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'avisos@elo.local')

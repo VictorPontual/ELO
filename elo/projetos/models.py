@@ -206,3 +206,69 @@ class ParceriaHospital(models.Model):
 
     def __str__(self):
         return f"{self.hospital.nome_hospital} parceiro em {self.projeto.titulo}"
+
+
+class ConfiguracaoAviso(models.Model):
+    """Configuração global (única) do aviso periódico enviado aos líderes dos projetos."""
+
+    MENSAGEM_PADRAO = (
+        'Olá {nome},\n\n'
+        'Este é um aviso periódico referente ao seu projeto de pesquisa '
+        '"{titulo}" (SIG {sig_id}).\n\n'
+        'Por favor, mantenha as informações do projeto atualizadas no sistema ELO.\n\n'
+        'Atenciosamente,\n'
+        'Equipe de Gestão da Pesquisa'
+    )
+
+    assunto = models.CharField(
+        max_length=255,
+        default='Aviso sobre seu projeto de pesquisa',
+    )
+    mensagem = models.TextField(default=MENSAGEM_PADRAO)
+    intervalo_dias = models.PositiveIntegerField(default=30)
+    ativo = models.BooleanField(default=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração de Aviso'
+        verbose_name_plural = 'Configuração de Avisos'
+
+    def __str__(self):
+        return 'Configuração de Avisos'
+
+    def save(self, *args, **kwargs):
+        # Singleton: sempre o mesmo registro
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def carregar(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class AvisoEnviado(models.Model):
+    """Registro de cada aviso enviado (ou tentado) a um pesquisador de um projeto."""
+
+    CANAL_CHOICES = [
+        ('email', 'E-mail'),
+        ('whatsapp', 'WhatsApp'),
+    ]
+
+    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='avisos')
+    pesquisador = models.ForeignKey(Pesquisador, on_delete=models.CASCADE)
+    canal = models.CharField(max_length=20, choices=CANAL_CHOICES)
+    destino = models.CharField(max_length=255, blank=True)
+    assunto = models.CharField(max_length=255, blank=True)
+    mensagem = models.TextField()
+    data_envio = models.DateTimeField(auto_now_add=True)
+    sucesso = models.BooleanField(default=False)
+    detalhe = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-data_envio']
+        verbose_name = 'Aviso Enviado'
+        verbose_name_plural = 'Avisos Enviados'
+
+    def __str__(self):
+        return f'Aviso para {self.pesquisador} em {self.data_envio:%d/%m/%Y %H:%M}'

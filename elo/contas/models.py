@@ -15,6 +15,17 @@ class Pesquisador(models.Model):
     celular = models.CharField(max_length=25, blank=True, null=True)
     preferencia_comunicacao_celular = models.BooleanField(default=False)
     preferencia_comunicacao_email = models.BooleanField(default=False)
+    whatsapp_apikey = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text=(
+            'Chave (apikey) gratuita do CallMeBot para envio de WhatsApp. '
+            'O pesquisador gera a chave adicionando o contato do CallMeBot e '
+            'enviando a mensagem de autorização. Necessária apenas se a '
+            'preferência de comunicação for por celular/WhatsApp.'
+        ),
+    )
     
     class Meta:
         db_table = 'pesquisador'

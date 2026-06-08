@@ -20,6 +20,13 @@
         {% endfor %}
     {% endif %}
 
+    <div class="tabs-nav">
+        <button type="button" class="tab-link active" data-tab="aba-detalhes">Detalhes do Projeto</button>
+        <button type="button" class="tab-link" data-tab="aba-avisos">Avisos</button>
+    </div>
+
+    <div class="tab-pane active" id="aba-detalhes">
+
     <form method="post" class="projeto-form" id="projetoForm">
         {% csrf_token %}
         
@@ -546,11 +553,119 @@
             </div>
         </div>
     </div>
-</div>
 
-<div class="form-actions">
-    <a href="{% url 'lista_projetos' %}" class="btn-cancelar">Cancelar</a>
-    <button type="submit" class="btn-salvar" form="projetoForm">Salvar Alterações</button>
+    <div class="form-actions">
+        <a href="{% url 'lista_projetos' %}" class="btn-cancelar">Cancelar</a>
+        <button type="submit" class="btn-salvar" form="projetoForm">Salvar Alterações</button>
+    </div>
+
+    </div><!-- /aba-detalhes -->
+
+    <!-- Aba de Avisos Periódicos -->
+    <div class="tab-pane" id="aba-avisos">
+        <div class="form-section">
+            <h3>Mensagem do Aviso</h3>
+            <p class="aviso-ajuda">
+                A mensagem abaixo vale para todos os projetos.
+            </p>
+
+            {% if lider_aviso %}
+                <p class="aviso-ajuda">
+                    Líder deste projeto: <strong>{{ lider_aviso.user.get_full_name|default:lider_aviso.user.username }}</strong>
+                    — preferência:
+                    {% if lider_aviso.preferencia_comunicacao_email %}E-mail{% endif %}
+                    {% if lider_aviso.preferencia_comunicacao_email and lider_aviso.preferencia_comunicacao_celular %} e {% endif %}
+                    {% if lider_aviso.preferencia_comunicacao_celular %}WhatsApp{% endif %}
+                    {% if not lider_aviso.preferencia_comunicacao_email and not lider_aviso.preferencia_comunicacao_celular %}<span class="error">nenhuma definida</span>{% endif %}
+                </p>
+            {% else %}
+                <p class="error">Este projeto ainda não possui um líder/pesquisador associado.</p>
+            {% endif %}
+
+            <form method="post" action="{% url 'salvar_config_aviso' projeto.sig_id_projeto %}" class="projeto-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ aviso_form.assunto.id_for_label }}">{{ aviso_form.assunto.label }}</label>
+                    {{ aviso_form.assunto }}
+                    {% if aviso_form.assunto.errors %}
+                        <span class="error">{{ aviso_form.assunto.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ aviso_form.mensagem.id_for_label }}">{{ aviso_form.mensagem.label }}</label>
+                    {{ aviso_form.mensagem }}
+                    {% if aviso_form.mensagem.errors %}
+                        <span class="error">{{ aviso_form.mensagem.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ aviso_form.intervalo_dias.id_for_label }}">{{ aviso_form.intervalo_dias.label }}</label>
+                        {{ aviso_form.intervalo_dias }}
+                        {% if aviso_form.intervalo_dias.errors %}
+                            <span class="error">{{ aviso_form.intervalo_dias.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-check" style="margin-top: 34px;">
+                            {{ aviso_form.ativo }}
+                            <label for="{{ aviso_form.ativo.id_for_label }}">{{ aviso_form.ativo.label }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-salvar">Salvar Mensagem</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Histórico de avisos enviados deste projeto -->
+        <div class="participantes-section">
+            <h3>Avisos Enviados</h3>
+            <div class="participantes-lista">
+                {% if avisos_enviados %}
+                    <table class="participantes-table">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Pesquisador</th>
+                                <th>Canal</th>
+                                <th>Destino</th>
+                                <th>Status</th>
+                                <th>Detalhe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aviso in avisos_enviados %}
+                            <tr>
+                                <td>{{ aviso.data_envio|date:"d/m/Y H:i" }}</td>
+                                <td>{{ aviso.pesquisador.user.get_full_name|default:aviso.pesquisador.user.username }}</td>
+                                <td>{{ aviso.get_canal_display }}</td>
+                                <td>{{ aviso.destino|default:"-" }}</td>
+                                <td>
+                                    {% if aviso.sucesso %}
+                                        <span class="badge-sucesso">Enviado</span>
+                                    {% else %}
+                                        <span class="badge-falha">Falha</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ aviso.detalhe|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="no-participantes">Nenhum aviso enviado ainda para este projeto.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div><!-- /aba-avisos -->
+
 </div>
 {% endblock %}
 
@@ -568,5 +683,35 @@
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";
     window.urlCriarVinculo = "{% url 'criar_vinculo_ajax' %}";
     window.urlCriarFuncao = "{% url 'criar_funcao_ajax' %}";
+</script>
+<script>
+    // Navegação por abas
+    (function () {
+        const links = document.querySelectorAll('.tab-link');
+        const panes = document.querySelectorAll('.tab-pane');
+
+        function ativar(tabId) {
+            links.forEach(function (link) {
+                link.classList.toggle('active', link.dataset.tab === tabId);
+            });
+            panes.forEach(function (pane) {
+                pane.classList.toggle('active', pane.id === tabId);
+            });
+        }
+
+        links.forEach(function (link) {
+            link.addEventListener('click', function () {
+                ativar(link.dataset.tab);
+            });
+        });
+
+        // Abre a aba indicada pela âncora da URL (ex.: #aba-avisos)
+        if (window.location.hash) {
+            const alvo = window.location.hash.substring(1);
+            if (document.getElementById(alvo)) {
+                ativar(alvo);
+            }
+        }
+    })();
 </script>
 {% endblock %}

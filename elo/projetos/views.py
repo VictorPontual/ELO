@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, LinhaPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador
+from django.urls import reverse
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, LinhaPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador, ConfiguracaoAviso, AvisoEnviado
+from .notificacoes import obter_lider
 from contas.models import Pesquisador
 from django import forms
 
@@ -826,6 +828,25 @@ class ParceriaHospitalForm(forms.Form):
         self.fields['hospital'].queryset = queryset
 
 
+class ConfiguracaoAvisoForm(forms.ModelForm):
+    """Formulário da mensagem/configuração global dos avisos periódicos."""
+    class Meta:
+        model = ConfiguracaoAviso
+        fields = ['assunto', 'mensagem', 'intervalo_dias', 'ativo']
+        widgets = {
+            'assunto': forms.TextInput(attrs={'class': 'form-control'}),
+            'mensagem': forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
+            'intervalo_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'assunto': 'Assunto (usado no e-mail)',
+            'mensagem': 'Mensagem do aviso',
+            'intervalo_dias': 'Intervalo entre avisos (dias)',
+            'ativo': 'Envio de avisos ativo',
+        }
+
+
 @login_required
 def criar_unidade_ajax(request):
     """View AJAX para criar nova unidade"""
@@ -1099,7 +1120,13 @@ def editar_projeto(request, projeto_id):
     participacoes = Participacao.objects.filter(projeto=projeto).select_related('pesquisador__user')
     envolvimentos = Envolve.objects.filter(projeto=projeto).select_related('unidade')
     parcerias_hospitalares = ParceriaHospital.objects.filter(projeto=projeto).select_related('hospital')
-    
+
+    # Avisos periódicos
+    config_aviso = ConfiguracaoAviso.carregar()
+    aviso_form = ConfiguracaoAvisoForm(instance=config_aviso)
+    avisos_enviados = AvisoEnviado.objects.filter(projeto=projeto).select_related('pesquisador__user')
+    lider = obter_lider(projeto)
+
     context = {
         'form': form,
         'projeto': projeto,
@@ -1109,9 +1136,34 @@ def editar_projeto(request, projeto_id):
         'participacoes': participacoes,
         'envolvimentos': envolvimentos,
         'parcerias_hospitalares': parcerias_hospitalares,
+        'aviso_form': aviso_form,
+        'avisos_enviados': avisos_enviados,
+        'lider_aviso': lider,
     }
-    
+
     return render(request, 'projetos/editar_projeto.html', context)
+
+
+@login_required
+def salvar_config_aviso(request, projeto_id):
+    # Verificar se o usuário é admin
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para editar avisos.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    config = ConfiguracaoAviso.carregar()
+
+    if request.method == 'POST':
+        form = ConfiguracaoAvisoForm(request.POST, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Mensagem de aviso atualizada com sucesso!')
+        else:
+            messages.error(request, 'Erro ao salvar a configuração de avisos. Verifique os dados.')
+
+    url = reverse('editar_projeto', args=[projeto.sig_id_projeto])
+    return redirect(f'{url}#aba-avisos')
 
 @login_required
 def adicionar_pesquisador(request, projeto_id):

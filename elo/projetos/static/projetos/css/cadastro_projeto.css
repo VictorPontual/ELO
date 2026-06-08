@@ -329,13 +329,87 @@ textarea.form-control {
     .participantes-table {
         font-size: 13px;
     }
-    
+
     .participantes-table th,
     .participantes-table td {
         padding: 10px;
     }
-    
+
     .adicionar-participante {
         padding: 15px;
     }
+}
+
+/* Abas */
+.tabs-nav {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.tab-link {
+    padding: 12px 22px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #7f8c8d;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.tab-link:hover {
+    color: #34495e;
+}
+
+.tab-link.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+    font-weight: 600;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Aba de Avisos */
+.aviso-ajuda {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.aviso-ajuda code {
+    background: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #c7254e;
+}
+
+.badge-sucesso,
+.badge-falha {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-sucesso {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-falha {
+    background-color: #f8d7da;
+    color: #721c24;
 }
