@@ -1238,3 +1238,49 @@ def remover_hospital(request, projeto_id, parceria_id):
     messages.success(request, f'Hospital {hospital_nome} removido do projeto.')
 
     return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
+
+
+# ---------------------------------------------------------------------------
+# Endpoint de cron: dispara os avisos periódicos.
+#
+# Chamado 1x/dia pelo Vercel Cron (ver vercel.json). O Vercel envia o header
+# "Authorization: Bearer <CRON_SECRET>" automaticamente quando existe a env var
+# CRON_SECRET. Também aceitamos "?token=<CRON_SECRET>" para teste manual.
+# ---------------------------------------------------------------------------
+import io
+from contextlib import redirect_stdout
+
+from django.conf import settings
+from django.core.management import call_command
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt
+def cron_enviar_avisos(request):
+    esperado = getattr(settings, 'CRON_SECRET', '') or ''
+
+    # Sem segredo configurado, o endpoint permanece fechado (nunca aberto).
+    if not esperado:
+        return JsonResponse(
+            {'ok': False, 'erro': 'CRON_SECRET não configurado no servidor.'},
+            status=503,
+        )
+
+    auth = request.META.get('HTTP_AUTHORIZATION', '')
+    token_header = auth[7:] if auth.startswith('Bearer ') else ''
+    token_query = request.GET.get('token', '')
+
+    if token_header != esperado and token_query != esperado:
+        return JsonResponse({'ok': False, 'erro': 'Não autorizado.'}, status=401)
+
+    buffer = io.StringIO()
+    try:
+        with redirect_stdout(buffer):
+            call_command('enviar_avisos')
+    except Exception as exc:  # noqa: BLE001 - reporta qualquer falha no JSON
+        return JsonResponse(
+            {'ok': False, 'erro': str(exc), 'saida': buffer.getvalue()},
+            status=500,
+        )
+
+    return JsonResponse({'ok': True, 'saida': buffer.getvalue()})

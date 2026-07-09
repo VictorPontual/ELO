@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,9 +29,37 @@ load_dotenv(BASE_DIR.parent / '.env')
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG')
+# Só é True quando a variável vale exatamente "True"; qualquer outro valor
+# (inclusive ausência) resulta em False, seguro para produção.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+# Hosts liberados: lista separada por vírgula no env. Em produção (Vercel)
+# use algo como "meu-projeto.vercel.app,meu-dominio.com".
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()
+]
+
+# Origens confiáveis para CSRF (necessário atrás de HTTPS/domínio no Vercel).
+# Precisa incluir o esquema, ex.: "https://meu-projeto.vercel.app".
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
+
+# Em desenvolvimento (DEBUG) mantém o comportamento antigo, aceitando localhost.
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# --- Segurança em produção (só quando DEBUG=False) ---
+# O Vercel termina o TLS e repassa o esquema original em X-Forwarded-Proto;
+# sem isso o Django não sabe que a conexão é HTTPS e o redirect entraria em loop.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -49,6 +78,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serve os arquivos estáticos direto pelo app (sem CDN/serviço
+    # externo). Precisa vir logo após o SecurityMiddleware.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,16 +113,32 @@ WSGI_APPLICATION = 'elo.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
+# Em produção (Vercel + Supabase) usamos a variável DATABASE_URL apontando para
+# o Connection Pooler do Supabase (Supavisor, porta 6543, modo transaction).
+# CONN_MAX_AGE=0 é obrigatório em serverless: cada request abre e fecha a
+# conexão, evitando estourar o limite do pooler.
+# Sem DATABASE_URL (desenvolvimento), caímos no Postgres local do .env.
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=0,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST'),
+            'PORT': os.environ.get('DB_PORT'),
+        }
+    }
 
 
 # Password validation
@@ -132,6 +180,30 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+# Destino do `collectstatic` (quando executado). Em runtime no Vercel o
+# WhiteNoise consegue servir direto das pastas de origem via finders, então o
+# deploy não depende de rodar collectstatic no build.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WHITENOISE_USE_FINDERS=True permite servir os estáticos direto de
+# STATICFILES_DIRS e das pastas static/ de cada app, mesmo sem collectstatic.
+# Usamos storage SEM manifest para não exigir o arquivo de manifest em runtime
+# (mais robusto em ambiente serverless).
+WHITENOISE_USE_FINDERS = True
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
+# Token compartilhado que protege o endpoint de disparo dos avisos (cron do
+# Vercel). Definido nas variáveis de ambiente; sem ele, o endpoint recusa tudo.
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
 
 # Login/Logout redirects
 LOGIN_REDIRECT_URL = 'lista_projetos'

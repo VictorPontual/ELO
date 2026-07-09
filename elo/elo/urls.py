@@ -19,6 +19,8 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 
+from projetos.views import cron_enviar_avisos
+
 def home(request):
     if request.user.is_authenticated:
         return redirect('lista_projetos')
@@ -30,4 +32,6 @@ urlpatterns = [
     path('contas/', include('contas.urls')),
     path('projetos/', include('projetos.urls')),
     path('dashboard/', include('dashboard.urls')),
+    # Endpoint sem barra final, para casar exatamente com o Vercel Cron.
+    path('cron/enviar-avisos', cron_enviar_avisos, name='cron_enviar_avisos'),
 ]
