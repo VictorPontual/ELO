@@ -1,5 +1,11 @@
 # ELO
 
+## Deploy grátis (Vercel + Supabase)
+
+Para hospedar o sistema de graça e com durabilidade, veja o guia passo a passo
+em [DEPLOY.md](DEPLOY.md). O código já está configurado (`vercel.json`,
+`api/index.py`, WhiteNoise, cron de avisos).
+
 ## Requisitos
 
 - Windows 10/11
