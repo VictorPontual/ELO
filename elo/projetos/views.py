@@ -469,30 +469,6 @@ class ProjetoForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        data_ent_sig = cleaned_data.get('data_ent_sig')
-        data_lib_analise = cleaned_data.get('data_lib_analise')
-        data_aprovacao_inst = cleaned_data.get('data_aprovacao_inst')
-        inicio_coleta = cleaned_data.get('inicio_coleta')
-
-        if data_ent_sig:
-            if data_lib_analise and data_lib_analise <= data_ent_sig:
-                self.add_error(
-                    'data_lib_analise',
-                    'A Data de Liberação para Análise deve ser posterior à Data de Entrada no SIG.',
-                )
-
-            if data_aprovacao_inst and data_aprovacao_inst <= data_ent_sig:
-                self.add_error(
-                    'data_aprovacao_inst',
-                    'A Data de Aprovação Institucional deve ser posterior à Data de Entrada no SIG.',
-                )
-
-            if inicio_coleta and inicio_coleta <= data_ent_sig:
-                self.add_error(
-                    'inicio_coleta',
-                    'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
-                )
-
         tipo_fomento = cleaned_data.get('tipo_fomento')
         formalizacao_instrumento = cleaned_data.get('formalizacao_instrumento')
 
@@ -682,30 +658,6 @@ class ProjetoEditForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
-        data_ent_sig = cleaned_data.get('data_ent_sig')
-        data_lib_analise = cleaned_data.get('data_lib_analise')
-        data_aprovacao_inst = cleaned_data.get('data_aprovacao_inst')
-        inicio_coleta = cleaned_data.get('inicio_coleta')
-
-        if data_ent_sig:
-            if data_lib_analise and data_lib_analise <= data_ent_sig:
-                self.add_error(
-                    'data_lib_analise',
-                    'A Data de Liberação para Análise deve ser posterior à Data de Entrada no SIG.',
-                )
-
-            if data_aprovacao_inst and data_aprovacao_inst <= data_ent_sig:
-                self.add_error(
-                    'data_aprovacao_inst',
-                    'A Data de Aprovação Institucional deve ser posterior à Data de Entrada no SIG.',
-                )
-
-            if inicio_coleta and inicio_coleta <= data_ent_sig:
-                self.add_error(
-                    'inicio_coleta',
-                    'A data de Início da Coleta deve ser posterior à Data de Entrada no SIG.',
-                )
 
         tipo_fomento = cleaned_data.get('tipo_fomento')
         formalizacao_instrumento = cleaned_data.get('formalizacao_instrumento')

@@ -15,10 +15,17 @@
         {{ form.nome }}
         {{ form.nome.errors }}
     </div>
-    <div class="field-group">
-        {{ form.celular.label_tag }}
-        {{ form.celular }}
-        {{ form.celular.errors }}
+    <div class="phone-group">
+        <div class="field-group field-ddd">
+            {{ form.ddd.label_tag }}
+            {{ form.ddd }}
+            {{ form.ddd.errors }}
+        </div>
+        <div class="field-group field-celular">
+            {{ form.celular.label_tag }}
+            {{ form.celular }}
+            {{ form.celular.errors }}
+        </div>
     </div>
     <div class="field-group">
         {{ form.email.label_tag }}

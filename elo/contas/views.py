@@ -29,7 +29,22 @@ class UserLoginView(LoginView):
 
 class PesquisadorForm(forms.ModelForm):
     nome = forms.CharField(max_length=150, label='Nome')
-    celular = forms.CharField(max_length=25, label='Celular', required=False)
+    ddd = forms.CharField(
+        max_length=2,
+        label='DDD',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Ex.: 61',
+            'inputmode': 'numeric',
+            'maxlength': '2',
+        }),
+    )
+    celular = forms.CharField(
+        max_length=25,
+        label='Celular',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Ex.: 91234-5678'}),
+    )
     email = forms.EmailField(label='E-mail')
     preferencia_comunicacao_celular = forms.BooleanField(
         label='Preferencia de contato por celular',
@@ -42,6 +57,7 @@ class PesquisadorForm(forms.ModelForm):
 
     field_order = [
         'nome',
+        'ddd',
         'celular',
         'preferencia_comunicacao_celular',
         'email',
@@ -60,6 +76,20 @@ class PesquisadorForm(forms.ModelForm):
             'preferencia_comunicacao_celular': 'Preferencia de contato por celular',
             'preferencia_comunicacao_email': 'Preferencia de contato por e-mail',
         }
+
+    def clean_ddd(self):
+        ddd = (self.cleaned_data.get('ddd') or '').strip()
+        if ddd and (not ddd.isdigit() or len(ddd) != 2):
+            raise forms.ValidationError('Informe o DDD com 2 dígitos. Ex.: 61.')
+        return ddd
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ddd = (cleaned_data.get('ddd') or '').strip()
+        celular = (cleaned_data.get('celular') or '').strip()
+        if ddd and not celular:
+            self.add_error('celular', 'Informe o número do celular junto com o DDD.')
+        return cleaned_data
 
     def clean_email(self):
         email = self.cleaned_data.get('email', '').strip().lower()
@@ -82,6 +112,11 @@ class PesquisadorForm(forms.ModelForm):
         pesquisador = super().save(commit=False)
         email = self.cleaned_data['email']
         nome = self.cleaned_data['nome']
+
+        ddd = (self.cleaned_data.get('ddd') or '').strip()
+        celular = (self.cleaned_data.get('celular') or '').strip()
+        if ddd and celular:
+            pesquisador.celular = f'({ddd}) {celular}'
 
         # Cria uma conta tecnica inativa somente para manter integridade do relacionamento.
         user = User.objects.create_user(

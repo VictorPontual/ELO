@@ -14,6 +14,20 @@
     margin-bottom: 1rem;
 }
 
+.phone-group {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.phone-group .field-ddd {
+    flex: 0 0 90px;
+}
+
+.phone-group .field-celular {
+    flex: 1;
+}
+
 .preference-group {
     padding: 0.75rem 1rem;
     background: #f6f9fb;
