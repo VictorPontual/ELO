@@ -1,0 +1,53 @@
+.searchable-select {
+    position: relative;
+    width: 100%;
+}
+
+.searchable-select__native {
+    /* Mantém o select no DOM (para submit) mas oculto. */
+    position: absolute;
+    opacity: 0;
+    height: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+.searchable-select__input {
+    width: 100%;
+}
+
+.searchable-select__list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    background: #fff;
+    border: 1px solid #ccd1d9;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.searchable-select__item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.searchable-select__item.is-active,
+.searchable-select__item:hover {
+    background-color: #eaf2fb;
+}
+
+.searchable-select__empty {
+    padding: 8px 12px;
+    color: #7f8c8d;
+    font-style: italic;
+    font-size: 14px;
+}

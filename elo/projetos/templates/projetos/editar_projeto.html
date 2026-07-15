@@ -4,6 +4,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
 <link rel="stylesheet" href="{% static 'projetos/css/unidade_modal.css' %}">
+<link rel="stylesheet" href="{% static 'projetos/css/searchable_select.css' %}">
 {% endblock %}
 
 {% block title %}Editar Projeto - ELO{% endblock %}
@@ -81,6 +82,15 @@
                 {% endif %}
                 <small class="form-text text-muted">Selecione um tipo existente ou crie um novo</small>
             </div>
+
+            <div class="form-group">
+                <label for="{{ form.sub_tipo_pesq.id_for_label }}">{{ form.sub_tipo_pesq.label }}</label>
+                {{ form.sub_tipo_pesq }}
+                {% if form.sub_tipo_pesq.errors %}
+                    <span class="error">{{ form.sub_tipo_pesq.errors.0 }}</span>
+                {% endif %}
+                <small class="form-text text-muted">Selecione o tipo primeiro; os sub-tipos são filtrados por tipo</small>
+            </div>
         </div>
 
         <div class="form-section">
@@ -149,6 +159,15 @@
                 {% if form.tipo_fomento.errors %}
                     <span class="error">{{ form.tipo_fomento.errors.0 }}</span>
                 {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.provedor_fomento.id_for_label }}">{{ form.provedor_fomento.label }}</label>
+                {{ form.provedor_fomento }}
+                {% if form.provedor_fomento.errors %}
+                    <span class="error">{{ form.provedor_fomento.errors.0 }}</span>
+                {% endif %}
+                <small class="form-text text-muted">Selecione um provedor existente ou crie um novo</small>
             </div>
 
             <div class="form-group" id="grupoFormalizacaoInstrumento" style="display: none;">
@@ -507,6 +526,21 @@
     </div>
 
     <!-- Modal para criar nova linha de pesquisa -->
+    <div id="modalCriarSubTipoPesquisa" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Novo Sub-tipo de Pesquisa</h2>
+            <div class="form-group">
+                <label for="nomeSubTipoPesquisaInput">Nome do Sub-tipo *</label>
+                <input type="text" id="nomeSubTipoPesquisaInput" placeholder="Ex: Ensaio clínico fase II" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarSubTipoPesquisa" class="btn-primary">Criar Sub-tipo</button>
+                <button type="button" id="botaoCancelarSubTipoPesquisa" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalCriarLinhaPesquisa" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -534,6 +568,22 @@
             <div class="modal-buttons">
                 <button type="button" id="botaoCriarEspecialidade" class="btn-primary">Criar Especialidade</button>
                 <button type="button" id="botaoCancelarEspecialidade" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para criar novo provedor de fomento -->
+    <div id="modalCriarProvedorFomento" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Novo Provedor de Fomento</h2>
+            <div class="form-group">
+                <label for="nomeProvedorFomentoInput">Nome do Provedor *</label>
+                <input type="text" id="nomeProvedorFomentoInput" placeholder="Ex: Fundação XYZ" autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" id="botaoCriarProvedorFomento" class="btn-primary">Criar Provedor</button>
+                <button type="button" id="botaoCancelarProvedorFomento" class="btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>
@@ -672,15 +722,19 @@
 {% block extra_js %}
 <script src="{% static 'projetos/js/cadastro_projeto.js' %}"></script>
 <script src="{% static 'projetos/js/unidade_modal.js' %}"></script>
+<script src="{% static 'projetos/js/searchable_select.js' %}"></script>
+<script src="{% static 'projetos/js/sub_tipo.js' %}"></script>
 <script>
     // Passar URLs dos endpoints AJAX para o JavaScript
     window.urlCriarUnidade = "{% url 'criar_unidade_ajax' %}";
     window.urlCriarHospital = "{% url 'criar_hospital_ajax' %}";
     window.urlCriarClassificacao = "{% url 'criar_classificacao_ajax' %}";
     window.urlCriarTipoPesquisa = "{% url 'criar_tipo_pesquisa_ajax' %}";
+    window.urlCriarSubTipoPesquisa = "{% url 'criar_sub_tipo_pesquisa_ajax' %}";
     window.urlCriarLinhaPesquisa = "{% url 'criar_linha_pesquisa_ajax' %}";
     window.urlCriarEspecialidade = "{% url 'criar_especialidade_ajax' %}";
     window.urlCriarInstituicao = "{% url 'criar_instituicao_ajax' %}";
+    window.urlCriarProvedorFomento = "{% url 'criar_provedor_fomento_ajax' %}";
     window.urlCriarVinculo = "{% url 'criar_vinculo_ajax' %}";
     window.urlCriarFuncao = "{% url 'criar_funcao_ajax' %}";
 </script>

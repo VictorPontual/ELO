@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
-from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, LinhaPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador, ConfiguracaoAviso, AvisoEnviado
-from .notificacoes import obter_lider
+from django.views.decorators.http import require_POST
+from .models import Projeto, Participacao, Unidade, ClassificacaoInstitucional, TipoPesquisa, SubTipoPesquisa, LinhaPesquisa, EspecialidadeProponente, InstituicaoProponente, HospitalHubBrasil, Envolve, ParceriaHospital, VinculoPesquisador, FuncaoPesquisador, ConfiguracaoAviso, AvisoEnviado, ProvedorFomento, ConfiguracaoAlertas, TipoAviso
+from .notificacoes import obter_lider, FUNCAO_LIDER
 from contas.models import Pesquisador
 from django import forms
 
@@ -144,6 +145,18 @@ VINCULOS_PARTICIPACAO_INICIAIS = [
     'Não informado',
 ]
 
+PROVEDORES_FOMENTO_INICIAIS = [
+    'CNPq',
+    'CAPES',
+    'FAP-DF',
+    'FINEP',
+    'Ministério da Saúde',
+    'Fundação de apoio',
+    'Indústria / Patrocinador',
+    'Recursos próprios',
+    'Outro',
+]
+
 UNIDADES_ORGANIZACIONAIS_INICIAIS = [
     'GERÊNCIA DE ATENÇÃO À SAÚDE',
     'Unidade Multiprofissional',
@@ -268,12 +281,34 @@ def _garantir_vinculos_participacao_iniciais():
         VinculoPesquisador.objects.get_or_create(nome_vinculo=nome)
 
 
+def _garantir_provedores_fomento_iniciais():
+    # Aditivo: nunca remove opções criadas pelos usuários.
+    for nome in PROVEDORES_FOMENTO_INICIAIS:
+        ProvedorFomento.objects.get_or_create(nome_provedor=nome)
+
+
+def _rotulo_pesquisador(pesquisador):
+    """Rótulo exibido na busca de pesquisadores: nome (e-mail)."""
+    user = pesquisador.user
+    nome = user.get_full_name() or user.username
+    email = (user.email or '').strip()
+    return f'{nome} ({email})' if email else nome
+
+
 def _formatar_trimestre(data):
     if not data:
         return '-'
 
     trimestre = ((data.month - 1) // 3) + 1
     return f'{trimestre}o trimestre ({data.year})'
+
+
+def _formatar_bimestre(data):
+    if not data:
+        return '-'
+
+    bimestre = ((data.month - 1) // 2) + 1
+    return f'{bimestre}o bimestre ({data.year})'
 
 
 def _formatar_duracao_em_dias(data_inicio, data_fim):
@@ -284,6 +319,51 @@ def _formatar_duracao_em_dias(data_inicio, data_fim):
     if dias < 0:
         return f'{abs(dias)} dias (ordem de datas invertida)'
     return f'{dias} dias'
+
+class SubTipoSelect(forms.Select):
+    """Select de sub-tipo que marca cada opção com o tipo pai (data-tipo),
+    permitindo filtrar no navegador conforme o tipo de pesquisa escolhido."""
+
+    def __init__(self, *args, mapa_tipos=None, **kwargs):
+        self.mapa_tipos = mapa_tipos or {}
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        chave = str(getattr(value, 'value', value))
+        tipo = self.mapa_tipos.get(chave)
+        if tipo:
+            option['attrs']['data-tipo'] = tipo
+        return option
+
+
+def _injetar_campo_sub_tipo(form):
+    """Adiciona o campo sub_tipo_pesq (dependente do tipo) a um form de projeto."""
+    mapa = {
+        str(st.pk): st.tipo.nome_tipo
+        for st in SubTipoPesquisa.objects.select_related('tipo')
+    }
+    form.fields['sub_tipo_pesq'] = forms.ModelChoiceField(
+        queryset=SubTipoPesquisa.objects.select_related('tipo').order_by('nome_sub_tipo'),
+        required=False,
+        widget=SubTipoSelect(
+            mapa_tipos=mapa,
+            attrs={'class': 'form-control', 'id': 'id_sub_tipo_pesq_select'},
+        ),
+        label='Sub-tipo de Pesquisa',
+        empty_label='-- Selecionar sub-tipo --',
+    )
+    sub_atual = getattr(form.instance, 'sub_tipo_pesq', None)
+    tipo_atual = getattr(form.instance, 'tipo_pesq', None)
+    if sub_atual and tipo_atual:
+        obj = (
+            SubTipoPesquisa.objects
+            .filter(nome_sub_tipo=sub_atual, tipo__nome_tipo=tipo_atual)
+            .first()
+        )
+        if obj:
+            form.initial['sub_tipo_pesq'] = obj
+
 
 class UnidadeForm(forms.ModelForm):
     """Formulário para criar nova unidade"""
@@ -466,6 +546,22 @@ class ProjetoForm(forms.ModelForm):
             if instituicao_obj:
                 self.initial['instituicao_proponente'] = instituicao_obj
 
+        _garantir_provedores_fomento_iniciais()
+        self.fields['provedor_fomento'] = forms.ModelChoiceField(
+            queryset=ProvedorFomento.objects.all().order_by('nome_provedor'),
+            required=False,
+            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_provedor_fomento_select'}),
+            label='Provedor de Fomento',
+            empty_label='-- Selecionar provedor --',
+        )
+        provedor_atual = getattr(self.instance, 'provedor_fomento', None)
+        if provedor_atual:
+            provedor_obj = ProvedorFomento.objects.filter(nome_provedor=provedor_atual).first()
+            if provedor_obj:
+                self.initial['provedor_fomento'] = provedor_obj
+
+        _injetar_campo_sub_tipo(self)
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -489,6 +585,9 @@ class ProjetoForm(forms.ModelForm):
         tipo_pesq = self.cleaned_data.get('tipo_pesq')
         projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
 
+        sub_tipo = self.cleaned_data.get('sub_tipo_pesq')
+        projeto.sub_tipo_pesq = sub_tipo.nome_sub_tipo if sub_tipo else None
+
         linha_pesquisa = self.cleaned_data.get('linhas_pesq')
         projeto.linhas_pesq = linha_pesquisa.nome_linha if linha_pesquisa else None
 
@@ -500,6 +599,9 @@ class ProjetoForm(forms.ModelForm):
 
         instituicao = self.cleaned_data.get('instituicao_proponente')
         projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
+
+        provedor = self.cleaned_data.get('provedor_fomento')
+        projeto.provedor_fomento = provedor.nome_provedor if provedor else None
         projeto.formalizacao_instrumento = bool(self.cleaned_data.get('formalizacao_instrumento'))
 
         if commit:
@@ -656,6 +758,22 @@ class ProjetoEditForm(forms.ModelForm):
             if instituicao_obj:
                 self.initial['instituicao_proponente'] = instituicao_obj
 
+        _garantir_provedores_fomento_iniciais()
+        self.fields['provedor_fomento'] = forms.ModelChoiceField(
+            queryset=ProvedorFomento.objects.all().order_by('nome_provedor'),
+            required=False,
+            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_provedor_fomento_select'}),
+            label='Provedor de Fomento',
+            empty_label='-- Selecionar provedor --',
+        )
+        provedor_atual = getattr(self.instance, 'provedor_fomento', None)
+        if provedor_atual:
+            provedor_obj = ProvedorFomento.objects.filter(nome_provedor=provedor_atual).first()
+            if provedor_obj:
+                self.initial['provedor_fomento'] = provedor_obj
+
+        _injetar_campo_sub_tipo(self)
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -679,11 +797,17 @@ class ProjetoEditForm(forms.ModelForm):
         tipo_pesq = self.cleaned_data.get('tipo_pesq')
         projeto.tipo_pesq = tipo_pesq.nome_tipo if tipo_pesq else None
 
+        sub_tipo = self.cleaned_data.get('sub_tipo_pesq')
+        projeto.sub_tipo_pesq = sub_tipo.nome_sub_tipo if sub_tipo else None
+
         especialidade = self.cleaned_data.get('especialidade_proponente')
         projeto.especialidade_proponente = especialidade.nome_especialidade if especialidade else None
 
         instituicao = self.cleaned_data.get('instituicao_proponente')
         projeto.instituicao_proponente = instituicao.nome_instituicao if instituicao else None
+
+        provedor = self.cleaned_data.get('provedor_fomento')
+        projeto.provedor_fomento = provedor.nome_provedor if provedor else None
         projeto.formalizacao_instrumento = bool(self.cleaned_data.get('formalizacao_instrumento'))
 
         if commit:
@@ -718,12 +842,16 @@ class ParticipacaoForm(forms.ModelForm):
         model = Participacao
         fields = ['pesquisador', 'vinculo', 'funcao']
         widgets = {
-            'pesquisador': forms.Select(attrs={'class': 'form-control'}),
+            'pesquisador': forms.Select(attrs={
+                'class': 'form-control',
+                'data-searchable': '1',
+                'data-placeholder': 'Digite o nome do pesquisador...',
+            }),
         }
         labels = {
             'pesquisador': 'Pesquisador',
         }
-    
+
     def __init__(self, *args, projeto=None, **kwargs):
         super().__init__(*args, **kwargs)
         _garantir_funcoes_participacao_iniciais()
@@ -731,12 +859,17 @@ class ParticipacaoForm(forms.ModelForm):
 
         self.fields['vinculo'].queryset = VinculoPesquisador.objects.all().order_by('nome_vinculo')
         self.fields['funcao'].queryset = FuncaoPesquisador.objects.all().order_by('nome_funcao')
-        if projeto:
-            # Excluir pesquisadores que já participam do projeto
-            participantes_ids = Participacao.objects.filter(projeto=projeto).values_list('pesquisador_id', flat=True)
-            pesquisador_field = self.fields.get('pesquisador')
-            if isinstance(pesquisador_field, forms.ModelChoiceField):
-                pesquisador_field.queryset = Pesquisador.objects.exclude(pk__in=participantes_ids)
+
+        pesquisador_field = self.fields.get('pesquisador')
+        if isinstance(pesquisador_field, forms.ModelChoiceField):
+            pesquisador_field.queryset = (
+                pesquisador_field.queryset.select_related('user').order_by('user__first_name', 'user__username')
+            )
+            pesquisador_field.label_from_instance = _rotulo_pesquisador
+            if projeto:
+                # Excluir pesquisadores que já participam do projeto
+                participantes_ids = Participacao.objects.filter(projeto=projeto).values_list('pesquisador_id', flat=True)
+                pesquisador_field.queryset = pesquisador_field.queryset.exclude(pk__in=participantes_ids)
 
 
 class EnvolveForm(forms.Form):
@@ -797,6 +930,134 @@ class ConfiguracaoAvisoForm(forms.ModelForm):
             'intervalo_dias': 'Intervalo entre avisos (dias)',
             'ativo': 'Envio de avisos ativo',
         }
+
+
+class ConfiguracaoAlertasForm(forms.ModelForm):
+    """Ajustes globais dos alertas de CEP e relatório."""
+    class Meta:
+        model = ConfiguracaoAlertas
+        fields = [
+            'cep_ativo', 'prazo_cep_meses', 'assunto_cep', 'mensagem_cep',
+            'relatorio_ativo', 'prazo_relatorio_meses', 'assunto_relatorio', 'mensagem_relatorio',
+        ]
+        widgets = {
+            'cep_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'prazo_cep_meses': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'assunto_cep': forms.TextInput(attrs={'class': 'form-control'}),
+            'mensagem_cep': forms.Textarea(attrs={'class': 'form-control', 'rows': 8}),
+            'relatorio_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'prazo_relatorio_meses': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'assunto_relatorio': forms.TextInput(attrs={'class': 'form-control'}),
+            'mensagem_relatorio': forms.Textarea(attrs={'class': 'form-control', 'rows': 8}),
+        }
+        labels = {
+            'cep_ativo': 'Ativar alerta de parecer do CEP',
+            'prazo_cep_meses': 'Prazo do parecer do CEP (meses após aprovação institucional)',
+            'assunto_cep': 'Assunto do e-mail (CEP)',
+            'mensagem_cep': 'Mensagem do alerta de CEP',
+            'relatorio_ativo': 'Ativar alerta de relatório',
+            'prazo_relatorio_meses': 'Prazo do relatório (meses após parecer do CEP)',
+            'assunto_relatorio': 'Assunto do e-mail (relatório)',
+            'mensagem_relatorio': 'Mensagem do alerta de relatório',
+        }
+
+
+class TipoAvisoForm(forms.ModelForm):
+    class Meta:
+        model = TipoAviso
+        fields = ['nome', 'assunto', 'mensagem', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Aviso de renovação'}),
+            'assunto': forms.TextInput(attrs={'class': 'form-control'}),
+            'mensagem': forms.Textarea(attrs={'class': 'form-control', 'rows': 8}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'nome': 'Nome do tipo de aviso',
+            'assunto': 'Assunto (usado no e-mail)',
+            'mensagem': 'Mensagem',
+            'ativo': 'Ativo',
+        }
+
+
+def _somente_admin(request):
+    return request.user.is_staff or request.user.is_superuser
+
+
+@login_required
+def gerenciar_avisos(request):
+    """Lista os tipos de aviso e permite cadastrar um novo."""
+    if not _somente_admin(request):
+        messages.error(request, 'Você não tem permissão para gerenciar avisos.')
+        return redirect('lista_projetos')
+
+    if request.method == 'POST':
+        form = TipoAvisoForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Tipo de aviso cadastrado com sucesso!')
+            return redirect('gerenciar_avisos')
+        messages.error(request, 'Erro ao cadastrar o tipo de aviso. Verifique os dados.')
+    else:
+        form = TipoAvisoForm()
+
+    tipos = TipoAviso.objects.all()
+    return render(request, 'projetos/gerenciar_avisos.html', {'form': form, 'tipos': tipos})
+
+
+@login_required
+def editar_aviso(request, pk):
+    if not _somente_admin(request):
+        messages.error(request, 'Você não tem permissão para editar avisos.')
+        return redirect('lista_projetos')
+
+    tipo = get_object_or_404(TipoAviso, pk=pk)
+    if request.method == 'POST':
+        form = TipoAvisoForm(request.POST, instance=tipo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Tipo de aviso atualizado com sucesso!')
+            return redirect('gerenciar_avisos')
+        messages.error(request, 'Erro ao atualizar o tipo de aviso.')
+    else:
+        form = TipoAvisoForm(instance=tipo)
+
+    return render(request, 'projetos/editar_aviso.html', {'form': form, 'tipo': tipo})
+
+
+@login_required
+@require_POST
+def remover_aviso(request, pk):
+    if not _somente_admin(request):
+        messages.error(request, 'Você não tem permissão para remover avisos.')
+        return redirect('lista_projetos')
+
+    tipo = get_object_or_404(TipoAviso, pk=pk)
+    nome = tipo.nome
+    tipo.delete()
+    messages.success(request, f'Tipo de aviso "{nome}" removido.')
+    return redirect('gerenciar_avisos')
+
+
+@login_required
+def ajustes(request):
+    """Página de ajustes gerais do sistema (config. dos alertas de CEP/relatório)."""
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para acessar os ajustes.')
+        return redirect('lista_projetos')
+
+    config = ConfiguracaoAlertas.carregar()
+    if request.method == 'POST':
+        form = ConfiguracaoAlertasForm(request.POST, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ajustes salvos com sucesso!')
+            return redirect('ajustes')
+        messages.error(request, 'Erro ao salvar os ajustes. Verifique os dados.')
+    else:
+        form = ConfiguracaoAlertasForm(instance=config)
+
+    return render(request, 'projetos/ajustes.html', {'form': form})
 
 
 @login_required
@@ -880,6 +1141,41 @@ def criar_tipo_pesquisa_ajax(request):
                 'success': False,
                 'error': 'Nome do tipo de pesquisa não pode estar vazio'
             }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
+def criar_sub_tipo_pesquisa_ajax(request):
+    """View AJAX para criar novo sub-tipo de pesquisa vinculado a um tipo."""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_sub_tipo', '').strip()
+        tipo_nome = request.POST.get('tipo', '').strip()
+        if not tipo_nome:
+            return JsonResponse({
+                'success': False,
+                'error': 'Selecione primeiro um tipo de pesquisa.'
+            }, status=400)
+        tipo = TipoPesquisa.objects.filter(nome_tipo=tipo_nome).first()
+        if not tipo:
+            return JsonResponse({
+                'success': False,
+                'error': 'Tipo de pesquisa inválido.'
+            }, status=400)
+        if nome:
+            sub_tipo, created = SubTipoPesquisa.objects.get_or_create(
+                nome_sub_tipo=nome, tipo=tipo
+            )
+            return JsonResponse({
+                'success': True,
+                'id': sub_tipo.pk,
+                'nome': sub_tipo.nome_sub_tipo,
+                'tipo': tipo.nome_tipo,
+                'created': created,
+            })
+        return JsonResponse({
+            'success': False,
+            'error': 'Nome do sub-tipo não pode estar vazio'
+        }, status=400)
     return JsonResponse({'error': 'Método não permitido'}, status=405)
 
 
@@ -968,6 +1264,27 @@ def criar_vinculo_ajax(request):
 
 
 @login_required
+def criar_provedor_fomento_ajax(request):
+    """View AJAX para criar novo provedor de fomento"""
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        nome = request.POST.get('nome_provedor', '').strip()
+        if nome:
+            provedor, created = ProvedorFomento.objects.get_or_create(nome_provedor=nome)
+            return JsonResponse({
+                'success': True,
+                'id': provedor.pk,
+                'nome': provedor.nome_provedor,
+                'created': created
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nome do provedor não pode estar vazio'
+            }, status=400)
+    return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+
+@login_required
 def criar_funcao_ajax(request):
     """View AJAX para criar nova função do pesquisador"""
     if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1007,6 +1324,7 @@ def lista_projetos(request):
     projetos = list(projetos)
     for projeto in projetos:
         setattr(projeto, 'trimestre_aprovacao_inst', _formatar_trimestre(projeto.data_aprovacao_inst))
+        setattr(projeto, 'bimestre_aprovacao_inst', _formatar_bimestre(projeto.data_aprovacao_inst))
         setattr(projeto, 'tempo_aprovacao_entrada_sig', _formatar_duracao_em_dias(
             projeto.data_ent_sig,
             projeto.data_aprovacao_inst,
@@ -1015,8 +1333,35 @@ def lista_projetos(request):
             projeto.data_lib_analise,
             projeto.data_aprovacao_inst,
         ))
-    
-    return render(request, 'projetos/lista_projetos.html', {'projetos': projetos})
+        setattr(projeto, 'lider_principal', _obter_nome_principal(projeto))
+
+    from .alertas import calcular_alertas
+    alertas = calcular_alertas(projetos)
+    alertas_cep = [a for a in alertas if a['tipo'] == 'cep']
+    alertas_relatorio = [a for a in alertas if a['tipo'] == 'relatorio']
+
+    return render(request, 'projetos/lista_projetos.html', {
+        'projetos': projetos,
+        'alertas': alertas,
+        'alertas_cep': alertas_cep,
+        'alertas_relatorio': alertas_relatorio,
+    })
+
+
+def _obter_nome_principal(projeto):
+    """Nome do pesquisador principal do projeto (para exibição e filtro)."""
+    principal = None
+    for participacao in projeto.participacao_set.all():
+        if participacao.funcao and participacao.funcao.nome_funcao == FUNCAO_LIDER:
+            principal = participacao
+            break
+    if principal is None:
+        primeira = next(iter(projeto.participacao_set.all()), None)
+        principal = primeira
+    if principal is None:
+        return ''
+    user = principal.pesquisador.user
+    return user.get_full_name() or user.username
 
 @login_required
 def cadastro_projeto(request):
@@ -1025,11 +1370,11 @@ def cadastro_projeto(request):
         if form.is_valid():
             projeto = form.save()
             
-            # Adicionar o usuário atual como líder do projeto
+            # Adicionar o usuário atual como pesquisador principal do projeto
             try:
                 pesquisador = Pesquisador.objects.get(user=request.user)
                 _garantir_funcoes_participacao_iniciais()
-                funcao_lider, _ = FuncaoPesquisador.objects.get_or_create(nome_funcao='Líder')
+                funcao_lider, _ = FuncaoPesquisador.objects.get_or_create(nome_funcao=FUNCAO_LIDER)
                 Participacao.objects.create(
                     pesquisador=pesquisador,
                     projeto=projeto,
@@ -1094,6 +1439,30 @@ def editar_projeto(request, projeto_id):
     }
 
     return render(request, 'projetos/editar_projeto.html', context)
+
+
+@login_required
+@require_POST
+def enviar_cobranca_alerta(request, projeto_id, tipo):
+    """Envia por e-mail a cobrança referente a um alerta (CEP ou relatório)."""
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, 'Você não tem permissão para enviar cobranças.')
+        return redirect('lista_projetos')
+
+    projeto = get_object_or_404(Projeto, sig_id_projeto=projeto_id)
+    if tipo not in ('cep', 'relatorio'):
+        messages.error(request, 'Tipo de cobrança inválido.')
+        return redirect('lista_projetos')
+
+    from .notificacoes import enviar_cobranca_email
+    sucesso, detalhe = enviar_cobranca_email(projeto, tipo)
+    if sucesso:
+        messages.success(request, f'Cobrança enviada por e-mail. {detalhe}')
+    else:
+        messages.error(request, f'Não foi possível enviar a cobrança: {detalhe}')
+
+    destino = request.POST.get('next') or reverse('lista_projetos')
+    return redirect(destino)
 
 
 @login_required
@@ -1238,49 +1607,3 @@ def remover_hospital(request, projeto_id, parceria_id):
     messages.success(request, f'Hospital {hospital_nome} removido do projeto.')
 
     return redirect('editar_projeto', projeto_id=projeto.sig_id_projeto)
-
-
-# ---------------------------------------------------------------------------
-# Endpoint de cron: dispara os avisos periódicos.
-#
-# Chamado 1x/dia pelo Vercel Cron (ver vercel.json). O Vercel envia o header
-# "Authorization: Bearer <CRON_SECRET>" automaticamente quando existe a env var
-# CRON_SECRET. Também aceitamos "?token=<CRON_SECRET>" para teste manual.
-# ---------------------------------------------------------------------------
-import io
-from contextlib import redirect_stdout
-
-from django.conf import settings
-from django.core.management import call_command
-from django.views.decorators.csrf import csrf_exempt
-
-
-@csrf_exempt
-def cron_enviar_avisos(request):
-    esperado = getattr(settings, 'CRON_SECRET', '') or ''
-
-    # Sem segredo configurado, o endpoint permanece fechado (nunca aberto).
-    if not esperado:
-        return JsonResponse(
-            {'ok': False, 'erro': 'CRON_SECRET não configurado no servidor.'},
-            status=503,
-        )
-
-    auth = request.META.get('HTTP_AUTHORIZATION', '')
-    token_header = auth[7:] if auth.startswith('Bearer ') else ''
-    token_query = request.GET.get('token', '')
-
-    if token_header != esperado and token_query != esperado:
-        return JsonResponse({'ok': False, 'erro': 'Não autorizado.'}, status=401)
-
-    buffer = io.StringIO()
-    try:
-        with redirect_stdout(buffer):
-            call_command('enviar_avisos')
-    except Exception as exc:  # noqa: BLE001 - reporta qualquer falha no JSON
-        return JsonResponse(
-            {'ok': False, 'erro': str(exc), 'saida': buffer.getvalue()},
-            status=500,
-        )
-
-    return JsonResponse({'ok': True, 'saida': buffer.getvalue()})

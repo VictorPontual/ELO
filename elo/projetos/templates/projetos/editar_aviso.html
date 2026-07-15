@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
+{% endblock %}
+
+{% block title %}Editar Aviso - ELO{% endblock %}
+
+{% block content %}
+<div class="cadastro-container">
+    <h2>Editar Tipo de Aviso</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="projeto-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<span class="error">{{ form.nome.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.assunto.id_for_label }}">{{ form.assunto.label }}</label>
+            {{ form.assunto }}
+            {% if form.assunto.errors %}<span class="error">{{ form.assunto.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.mensagem.id_for_label }}">{{ form.mensagem.label }}</label>
+            {{ form.mensagem }}
+            {% if form.mensagem.errors %}<span class="error">{{ form.mensagem.errors.0 }}</span>{% endif %}
+            <small class="form-text text-muted">Variáveis: {nome}, {titulo}, {sig_id}</small>
+        </div>
+        <div class="form-check">
+            {{ form.ativo }}
+            <label for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+        </div>
+        <div class="form-actions">
+            <a href="{% url 'gerenciar_avisos' %}" class="btn-cancelar">Cancelar</a>
+            <button type="submit" class="btn-salvar">Salvar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -29,6 +29,19 @@ class TipoPesquisa(models.Model):
         verbose_name_plural = 'Tipos de Pesquisa'
 
 
+class SubTipoPesquisa(models.Model):
+    nome_sub_tipo = models.CharField(max_length=255)
+    tipo = models.ForeignKey(TipoPesquisa, on_delete=models.CASCADE, related_name='subtipos')
+
+    def __str__(self):
+        return self.nome_sub_tipo
+
+    class Meta:
+        unique_together = ('nome_sub_tipo', 'tipo')
+        verbose_name = 'Sub-tipo de Pesquisa'
+        verbose_name_plural = 'Sub-tipos de Pesquisa'
+
+
 class LinhaPesquisa(models.Model):
     nome_linha = models.CharField(max_length=255, primary_key=True)
 
@@ -60,6 +73,17 @@ class InstituicaoProponente(models.Model):
     class Meta:
         verbose_name = 'Instituição Proponente'
         verbose_name_plural = 'Instituições Proponentes'
+
+
+class ProvedorFomento(models.Model):
+    nome_provedor = models.CharField(max_length=255, primary_key=True)
+
+    def __str__(self):
+        return self.nome_provedor
+
+    class Meta:
+        verbose_name = 'Provedor de Fomento'
+        verbose_name_plural = 'Provedores de Fomento'
 
 
 class HospitalHubBrasil(models.Model):
@@ -128,6 +152,7 @@ class Projeto(models.Model):
     data_lib_analise = models.DateField(blank=True, null=True)
     titulo = models.CharField(max_length=255)
     tipo_pesq = models.CharField(max_length=255, blank=True, null=True)
+    sub_tipo_pesq = models.CharField(max_length=255, blank=True, null=True)
     desenvolvimento_tecnologico = models.CharField(
         max_length=10,
         choices=DESENVOLVIMENTO_TECNOLOGICO_CHOICES,
@@ -138,6 +163,7 @@ class Projeto(models.Model):
     especialidade_proponente = models.CharField(max_length=255, blank=True, null=True)
     instituicao_proponente = models.CharField(max_length=255, blank=True, null=True)
     tipo_fomento = models.CharField(max_length=50, choices=TIPO_FOMENTO_CHOICES, blank=True, null=True)
+    provedor_fomento = models.CharField(max_length=255, blank=True, null=True)
     formalizacao_instrumento = models.BooleanField(default=False)
     linhas_pesq = models.TextField(blank=True, null=True)
     inicio_coleta = models.DateField(blank=True, null=True)
@@ -245,6 +271,83 @@ class ConfiguracaoAviso(models.Model):
     def carregar(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class ConfiguracaoAlertas(models.Model):
+    """Configuração global (única) dos alertas de CEP e relatório na Main page."""
+
+    ASSUNTO_CEP_PADRAO = 'Pendência: parecer do CEP do seu projeto de pesquisa'
+    MENSAGEM_CEP_PADRAO = (
+        'Olá {nome},\n\n'
+        'O projeto "{titulo}" (SIG {sig_id}) foi aprovado institucionalmente em '
+        '{data_aprovacao} e ainda não possui parecer do CEP registrado.\n\n'
+        'O parecer do CEP é esperado em até {prazo_cep} meses após a aprovação '
+        'institucional. Por favor, providencie a submissão/registro do parecer.\n\n'
+        'Atenciosamente,\nEquipe de Gestão da Pesquisa'
+    )
+    ASSUNTO_RELATORIO_PADRAO = 'Pendência: relatório do seu projeto de pesquisa'
+    MENSAGEM_RELATORIO_PADRAO = (
+        'Olá {nome},\n\n'
+        'Passou-se mais de {prazo_relatorio} meses desde o parecer do CEP do '
+        'projeto "{titulo}" (SIG {sig_id}), emitido em {data_parecer_cep}.\n\n'
+        'É necessário apresentar o relatório do projeto. Por favor, providencie '
+        'o envio.\n\nAtenciosamente,\nEquipe de Gestão da Pesquisa'
+    )
+
+    cep_ativo = models.BooleanField(default=True, verbose_name='Alerta de CEP ativo')
+    prazo_cep_meses = models.PositiveIntegerField(
+        default=6,
+        verbose_name='Prazo para parecer do CEP (meses após aprovação institucional)',
+    )
+    assunto_cep = models.CharField(max_length=255, default=ASSUNTO_CEP_PADRAO)
+    mensagem_cep = models.TextField(default=MENSAGEM_CEP_PADRAO)
+
+    relatorio_ativo = models.BooleanField(default=True, verbose_name='Alerta de relatório ativo')
+    prazo_relatorio_meses = models.PositiveIntegerField(
+        default=12,
+        verbose_name='Prazo para relatório (meses após parecer do CEP)',
+    )
+    assunto_relatorio = models.CharField(max_length=255, default=ASSUNTO_RELATORIO_PADRAO)
+    mensagem_relatorio = models.TextField(default=MENSAGEM_RELATORIO_PADRAO)
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração de Alertas'
+        verbose_name_plural = 'Configuração de Alertas'
+
+    def __str__(self):
+        return 'Configuração de Alertas'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def carregar(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class TipoAviso(models.Model):
+    """Tipo de aviso geral cadastrável, gerenciado na página de avisos."""
+
+    nome = models.CharField(max_length=120, unique=True)
+    assunto = models.CharField(max_length=255)
+    mensagem = models.TextField(
+        help_text='Variáveis disponíveis: {nome}, {titulo}, {sig_id}.'
+    )
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name = 'Tipo de Aviso'
+        verbose_name_plural = 'Tipos de Aviso'
+
+    def __str__(self):
+        return self.nome
 
 
 class AvisoEnviado(models.Model):

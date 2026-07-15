@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownModal('linha_pesquisa', 'modalCriarLinhaPesquisa', 'id_linha_pesquisa_select', 'nomeLinhaPesquisaInput', 'botaoCriarLinhaPesquisa', 'botaoCancelarLinhaPesquisa');
     setupDropdownModal('especialidade', 'modalCriarEspecialidade', 'id_especialidade_select', 'nomeEspecialidadeInput', 'botaoCriarEspecialidade', 'botaoCancelarEspecialidade');
     setupDropdownModal('instituicao', 'modalCriarInstituicao', 'id_instituicao_select', 'nomeInstituicaoInput', 'botaoCriarInstituicao', 'botaoCancelarInstituicao');
+    setupDropdownModal('provedor_fomento', 'modalCriarProvedorFomento', 'id_provedor_fomento_select', 'nomeProvedorFomentoInput', 'botaoCriarProvedorFomento', 'botaoCancelarProvedorFomento');
 });
 
 function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelButtonId) {
@@ -31,7 +32,8 @@ function setupDropdownModal(type, modalId, selectId, inputId, buttonId, cancelBu
         tipo_pesquisa: '+ Novo Tipo de Pesquisa',
         linha_pesquisa: '+ Nova Linha de Pesquisa',
         especialidade: '+ Nova Especialidade',
-        instituicao: '+ Nova Instituição'
+        instituicao: '+ Nova Instituição',
+        provedor_fomento: '+ Novo Provedor de Fomento'
     };
     optionCriarNova.textContent = labels[type] || '+ Nova Opção';
     optionCriarNova.style.fontWeight = 'bold';
@@ -113,7 +115,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         tipo_pesquisa: 'tipo de pesquisa',
         linha_pesquisa: 'linha de pesquisa',
         especialidade: 'especialidade',
-        instituicao: 'instituição'
+        instituicao: 'instituição',
+        provedor_fomento: 'provedor de fomento'
     };
 
     if (!nome) {
@@ -163,6 +166,10 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
         endpoint = window.urlCriarInstituicao;
         paramName = 'nome_instituicao';
         textoBotao = 'Criar Instituição';
+    } else if (type === 'provedor_fomento') {
+        endpoint = window.urlCriarProvedorFomento;
+        paramName = 'nome_provedor';
+        textoBotao = 'Criar Provedor';
     } else {
         endpoint = window.urlCriarEspecialidade;
         paramName = 'nome_especialidade';
@@ -206,7 +213,8 @@ function criarNovaOpcao(type, modalId, selectId, inputId, buttonId) {
                 tipo_pesquisa: 'Tipo de pesquisa criado com sucesso!',
                 linha_pesquisa: 'Linha de pesquisa criada com sucesso!',
                 especialidade: 'Especialidade criada com sucesso!',
-                instituicao: 'Instituição criada com sucesso!'
+                instituicao: 'Instituição criada com sucesso!',
+                provedor_fomento: 'Provedor de fomento criado com sucesso!'
             };
             alert(sucesso[type] || 'Opção criada com sucesso!');
         } else {

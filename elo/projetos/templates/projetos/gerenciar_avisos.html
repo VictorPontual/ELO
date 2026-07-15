@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
+<link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+{% endblock %}
+
+{% block title %}Gerenciar Avisos - ELO{% endblock %}
+
+{% block content %}
+<div class="cadastro-container">
+    <h2>Gerenciamento de Avisos</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="form-section">
+        <h3>Tipos de aviso cadastrados</h3>
+        {% if tipos %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Assunto</th>
+                        <th>Ativo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo in tipos %}
+                    <tr>
+                        <td>{{ tipo.nome }}</td>
+                        <td>{{ tipo.assunto }}</td>
+                        <td>{{ tipo.ativo|yesno:"Sim,Não" }}</td>
+                        <td>
+                            <a href="{% url 'editar_aviso' tipo.pk %}" class="btn-edit">Editar</a>
+                            <form method="post" action="{% url 'remover_aviso' tipo.pk %}" class="form-inline"
+                                  onsubmit="return confirm('Remover este tipo de aviso?');" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-remover">Remover</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-projects">Nenhum tipo de aviso cadastrado ainda.</p>
+        {% endif %}
+    </div>
+
+    <div class="form-section">
+        <h3>Cadastrar novo tipo de aviso</h3>
+        <form method="post" class="projeto-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<span class="error">{{ form.nome.errors.0 }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.assunto.id_for_label }}">{{ form.assunto.label }}</label>
+                {{ form.assunto }}
+                {% if form.assunto.errors %}<span class="error">{{ form.assunto.errors.0 }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.mensagem.id_for_label }}">{{ form.mensagem.label }}</label>
+                {{ form.mensagem }}
+                {% if form.mensagem.errors %}<span class="error">{{ form.mensagem.errors.0 }}</span>{% endif %}
+                <small class="form-text text-muted">Variáveis: {nome}, {titulo}, {sig_id}</small>
+            </div>
+            <div class="form-check">
+                {{ form.ativo }}
+                <label for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-salvar">Cadastrar Tipo de Aviso</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

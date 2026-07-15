@@ -4,6 +4,291 @@ table {
     margin-top: 1.5rem;
 }
 
+/* Quadrante de alertas */
+.quadrante-alertas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin: 8px 0 20px;
+}
+
+.quadrante-item {
+    border: 1px solid #e2e8ee;
+    border-radius: 10px;
+    background: #fff;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.quadrante-cep {
+    border-top: 4px solid #e67e22;
+}
+
+.quadrante-relatorio {
+    border-top: 4px solid #8e44ad;
+}
+
+.quadrante-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.quadrante-titulo {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 15px;
+}
+
+.quadrante-contador {
+    background: #34495e;
+    color: #fff;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.quadrante-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.quadrante-alerta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.quadrante-alerta:last-child {
+    border-bottom: none;
+}
+
+.quadrante-alerta__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: #555;
+}
+
+.quadrante-alerta__info strong {
+    color: #2c3e50;
+}
+
+.quadrante-alerta__prazo {
+    font-size: 12px;
+    color: #c0392b;
+}
+
+.btn-cobrar {
+    background-color: #e67e22;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-cobrar:hover {
+    background-color: #d35400;
+}
+
+.quadrante-vazio {
+    color: #7f8c8d;
+    font-style: italic;
+    font-size: 13px;
+    margin: 0;
+}
+
+.mensagens-lista {
+    margin-bottom: 16px;
+}
+
+.mensagem {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    background: #eef6ff;
+    border: 1px solid #cfe4fb;
+    color: #1f5f9e;
+}
+
+.mensagem.success {
+    background: #eafaf1;
+    border-color: #cdeedd;
+    color: #1e824c;
+}
+
+.mensagem.error {
+    background: #fdecea;
+    border-color: #f5c6c2;
+    color: #b03a2e;
+}
+
+/* Busca + filtros */
+.busca-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.busca-input {
+    flex: 1 1 320px;
+    min-width: 220px;
+    padding: 10px 14px;
+    border: 1px solid #ccd1d9;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.busca-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+}
+
+.filtros-menu-wrapper {
+    position: relative;
+}
+
+.btn-filtros {
+    background-color: #34495e;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.btn-filtros:hover {
+    background-color: #2c3e50;
+}
+
+.painel-filtros {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 50;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 280px;
+}
+
+/* O display:flex acima sobrepõe o atributo [hidden] (estilo do navegador);
+   esta regra garante que o painel realmente feche quando hidden estiver setado. */
+.painel-filtros[hidden] {
+    display: none;
+}
+
+.painel-filtros__label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.painel-filtros__select,
+.painel-filtros__input {
+    padding: 8px 10px;
+    border: 1px solid #ccd1d9;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.btn-aplicar-filtro {
+    background-color: #27ae60;
+    color: white;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-aplicar-filtro:hover {
+    background-color: #229954;
+}
+
+.busca-filtro {
+    padding: 10px 14px;
+    border: 1px solid #ccd1d9;
+    border-radius: 6px;
+    font-size: 15px;
+    background: #fff;
+}
+
+.busca-contador {
+    color: #7f8c8d;
+    font-size: 13px;
+}
+
+.filtros-ativos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.filtros-ativos:empty {
+    margin-bottom: 0;
+}
+
+.chip-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #eaf2fb;
+    color: #1f5f9e;
+    border: 1px solid #c5dbf3;
+    border-radius: 16px;
+    padding: 4px 6px 4px 12px;
+    font-size: 13px;
+}
+
+.chip-filtro__x {
+    background: #1f5f9e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chip-filtro__x:hover {
+    background: #e74c3c;
+}
+
 .header-container {
     display: flex;
     justify-content: space-between;

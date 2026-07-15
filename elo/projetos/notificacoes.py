@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 CALLMEBOT_URL = 'https://api.callmebot.com/whatsapp.php'
 
-FUNCAO_LIDER = 'Líder'
+FUNCAO_LIDER = 'Pesquisador principal'
 
 
 def obter_lider(projeto):
@@ -119,6 +119,60 @@ def _registrar(projeto, pesquisador, canal, destino, assunto, mensagem, sucesso,
         sucesso=sucesso,
         detalhe=detalhe,
     )
+
+
+def renderizar_mensagem_alerta(template, pesquisador, projeto, config):
+    """Renderiza a mensagem de um alerta (CEP/relatório) com suas variáveis."""
+    nome = pesquisador.user.get_full_name() or pesquisador.user.username
+    contexto = {
+        'nome': nome,
+        'titulo': projeto.titulo,
+        'sig_id': projeto.sig_id_projeto,
+        'data_aprovacao': projeto.data_aprovacao_inst.strftime('%d/%m/%Y') if projeto.data_aprovacao_inst else '-',
+        'data_parecer_cep': projeto.data_parecer_cep.strftime('%d/%m/%Y') if projeto.data_parecer_cep else '-',
+        'prazo_cep': config.prazo_cep_meses,
+        'prazo_relatorio': config.prazo_relatorio_meses,
+    }
+
+    class _ComPadrao(dict):
+        def __missing__(self, key):
+            return '{' + key + '}'
+
+    try:
+        return template.format_map(_ComPadrao(contexto))
+    except (ValueError, IndexError):
+        return template
+
+
+def enviar_cobranca_email(projeto, tipo, config=None):
+    """Envia por e-mail a cobrança de um alerta (CEP ou relatório) ao pesquisador
+    principal. Retorna (sucesso, detalhe)."""
+    from .models import ConfiguracaoAlertas
+
+    if config is None:
+        config = ConfiguracaoAlertas.carregar()
+
+    pesquisador = obter_lider(projeto)
+    if pesquisador is None:
+        return False, 'Projeto sem pesquisador principal associado.'
+
+    if tipo == 'cep':
+        assunto = config.assunto_cep
+        template = config.mensagem_cep
+    elif tipo == 'relatorio':
+        assunto = config.assunto_relatorio
+        template = config.mensagem_relatorio
+    else:
+        return False, 'Tipo de alerta inválido.'
+
+    mensagem = renderizar_mensagem_alerta(template, pesquisador, projeto, config)
+    sucesso, detalhe = enviar_email(pesquisador, assunto, mensagem)
+    _registrar(
+        projeto, pesquisador, 'email',
+        (pesquisador.user.email or '').strip(),
+        assunto, mensagem, sucesso, detalhe,
+    )
+    return sucesso, detalhe
 
 
 def enviar_aviso_para_lider(projeto, config=None):

@@ -11,27 +11,138 @@
     <a href="{% url 'cadastro_projeto' %}" class="btn-novo-projeto">+ Novo Projeto</a>
 </div>
 
+<section class="quadrante-alertas" aria-label="Quadrante de alertas">
+    <div class="quadrante-item quadrante-cep">
+        <div class="quadrante-cabecalho">
+            <span class="quadrante-titulo">Parecer do CEP pendente</span>
+            <span class="quadrante-contador">{{ alertas_cep|length }}</span>
+        </div>
+        {% if alertas_cep %}
+            <ul class="quadrante-lista">
+                {% for alerta in alertas_cep %}
+                <li class="quadrante-alerta">
+                    <div class="quadrante-alerta__info">
+                        <strong>{{ alerta.projeto.titulo }}</strong>
+                        <span>{{ alerta.descricao }}</span>
+                        <span class="quadrante-alerta__prazo">
+                            Prazo: {{ alerta.data_limite|date:"d/m/Y" }}
+                            {% if alerta.dias_atraso > 0 %}· {{ alerta.dias_atraso }} dia(s) em atraso{% endif %}
+                        </span>
+                    </div>
+                    {% if user.is_staff or user.is_superuser %}
+                    <form method="post" action="{% url 'enviar_cobranca_alerta' alerta.projeto.sig_id_projeto 'cep' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn-cobrar"
+                                onclick="return confirm('Enviar cobrança por e-mail ao pesquisador principal?');">
+                            Enviar cobrança
+                        </button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="quadrante-vazio">Nenhuma pendência de parecer do CEP.</p>
+        {% endif %}
+    </div>
+
+    <div class="quadrante-item quadrante-relatorio">
+        <div class="quadrante-cabecalho">
+            <span class="quadrante-titulo">Relatório pendente</span>
+            <span class="quadrante-contador">{{ alertas_relatorio|length }}</span>
+        </div>
+        {% if alertas_relatorio %}
+            <ul class="quadrante-lista">
+                {% for alerta in alertas_relatorio %}
+                <li class="quadrante-alerta">
+                    <div class="quadrante-alerta__info">
+                        <strong>{{ alerta.projeto.titulo }}</strong>
+                        <span>{{ alerta.descricao }}</span>
+                        <span class="quadrante-alerta__prazo">
+                            Prazo: {{ alerta.data_limite|date:"d/m/Y" }}
+                            {% if alerta.dias_atraso > 0 %}· {{ alerta.dias_atraso }} dia(s) em atraso{% endif %}
+                        </span>
+                    </div>
+                    {% if user.is_staff or user.is_superuser %}
+                    <form method="post" action="{% url 'enviar_cobranca_alerta' alerta.projeto.sig_id_projeto 'relatorio' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn-cobrar"
+                                onclick="return confirm('Enviar cobrança por e-mail ao pesquisador principal?');">
+                            Enviar cobrança
+                        </button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="quadrante-vazio">Nenhuma pendência de relatório.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% if messages %}
+    <div class="mensagens-lista">
+        {% for message in messages %}
+            <div class="mensagem {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 {% if projetos %}
+    <div class="busca-container">
+        <input type="search" id="busca-projetos" class="busca-input"
+               placeholder="Buscar por título, pesquisador principal ou tipo...">
+        <div class="filtros-menu-wrapper">
+            <button type="button" id="btn-abrir-filtros" class="btn-filtros">Filtros ▾</button>
+            <div id="painel-filtros" class="painel-filtros" hidden>
+                <label class="painel-filtros__label">
+                    Campo
+                    <select id="filtro-campo" class="painel-filtros__select">
+                        <option value="titulo">Título</option>
+                        <option value="lider">Pesquisador principal</option>
+                        <option value="tipo">Tipo de pesquisa</option>
+                        <option value="especialidade">Especialidade</option>
+                        <option value="instituicao">Instituição</option>
+                        <option value="classificacao">Classificação</option>
+                    </select>
+                </label>
+                <label class="painel-filtros__label">
+                    Valor
+                    <select id="filtro-valor-select" class="painel-filtros__select"></select>
+                    <input type="text" id="filtro-valor-input" class="painel-filtros__input"
+                           placeholder="Digite o texto" hidden>
+                </label>
+                <button type="button" id="btn-aplicar-filtro" class="btn-aplicar-filtro">Aplicar filtro</button>
+            </div>
+        </div>
+        <span id="busca-contador" class="busca-contador"></span>
+    </div>
+
+    <div id="filtros-ativos" class="filtros-ativos"></div>
+
     <table>
         <thead>
             <tr>
                 <th>Nome do Projeto</th>
-                <th>Pesquisador Líder</th>
+                <th>Pesquisador Principal</th>
                 <th>Tipo</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for projeto in projetos %}
-            <tr>
+            <tr class="linha-projeto"
+                data-titulo="{{ projeto.titulo|lower }}"
+                data-lider="{{ projeto.lider_principal|lower }}"
+                data-tipo="{{ projeto.tipo_pesq|default:''|lower }}"
+                data-especialidade="{{ projeto.especialidade_proponente|default:''|lower }}"
+                data-instituicao="{{ projeto.instituicao_proponente|default:''|lower }}"
+                data-classificacao="{% for c in projeto.classificacoes.all %}{{ c.nome_classificacao|lower }}{% if not forloop.last %} | {% endif %}{% endfor %}">
                 <td>{{ projeto.titulo }}</td>
-                <td>
-                    {% for participacao in projeto.participacao_set.all %}
-                        {% if participacao.funcao and participacao.funcao.nome_funcao == 'Líder' %}
-                            {{ participacao.pesquisador.user.get_full_name|default:participacao.pesquisador.user.username }}
-                        {% endif %}
-                    {% endfor %}
-                </td>
+                <td>{{ projeto.lider_principal|default:"-" }}</td>
                 <td>{{ projeto.tipo_pesq|default:"-" }}</td>
                 <td>
                     <button class="btn-detalhes" data-projeto-id="{{ projeto.sig_id_projeto }}">+</button>
@@ -40,6 +151,7 @@
             {% endfor %}
         </tbody>
     </table>
+    <p id="sem-resultados" class="no-projects" style="display:none;">Nenhum projeto corresponde aos filtros.</p>
     
     <!-- Modais fora da tabela -->
     {% for projeto in projetos %}
@@ -81,6 +193,10 @@
                         <span>{{ projeto.get_tipo_pesq_display|default:"-" }}</span>
                     </div>
                     <div class="info-item">
+                        <strong>Sub-tipo de Pesquisa:</strong>
+                        <span>{{ projeto.sub_tipo_pesq|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
                         <strong>Especialidade do Proponente:</strong>
                         <span>{{ projeto.especialidade_proponente|default:"-" }}</span>
                     </div>
@@ -109,6 +225,14 @@
                     <div class="info-item">
                         <strong>Papel do HUB no Multicêntrico:</strong>
                         <span>{{ projeto.papel_HUB_multi|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Tipo de Fomento:</strong>
+                        <span>{{ projeto.tipo_fomento|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Provedor de Fomento:</strong>
+                        <span>{{ projeto.provedor_fomento|default:"-" }}</span>
                     </div>
                 </div>
             </div>
@@ -142,6 +266,10 @@
                     <div class="info-item">
                         <strong>Trimestre da Aprovação Institucional:</strong>
                         <span>{{ projeto.trimestre_aprovacao_inst }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Bimestre da Aprovação Institucional:</strong>
+                        <span>{{ projeto.bimestre_aprovacao_inst }}</span>
                     </div>
                     <div class="info-item">
                         <strong>Parecer CEP:</strong>

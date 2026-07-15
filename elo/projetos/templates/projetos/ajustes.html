@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/cadastro_projeto.css' %}">
+{% endblock %}
+
+{% block title %}Ajustes - ELO{% endblock %}
+
+{% block content %}
+<div class="cadastro-container">
+    <h2>Ajustes do Sistema</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="projeto-form">
+        {% csrf_token %}
+
+        <div class="form-section">
+            <h3>Alerta de parecer do CEP</h3>
+            <p class="form-text text-muted">
+                Projetos aprovados institucionalmente que ainda não possuem parecer do CEP
+                geram um alerta após o prazo definido abaixo.
+            </p>
+
+            <div class="form-check">
+                {{ form.cep_ativo }}
+                <label for="{{ form.cep_ativo.id_for_label }}">{{ form.cep_ativo.label }}</label>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.prazo_cep_meses.id_for_label }}">{{ form.prazo_cep_meses.label }}</label>
+                {{ form.prazo_cep_meses }}
+                {% if form.prazo_cep_meses.errors %}<span class="error">{{ form.prazo_cep_meses.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.assunto_cep.id_for_label }}">{{ form.assunto_cep.label }}</label>
+                {{ form.assunto_cep }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.mensagem_cep.id_for_label }}">{{ form.mensagem_cep.label }}</label>
+                {{ form.mensagem_cep }}
+                <small class="form-text text-muted">
+                    Variáveis: {nome}, {titulo}, {sig_id}, {data_aprovacao}, {prazo_cep}
+                </small>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Alerta de relatório</h3>
+            <p class="form-text text-muted">
+                Projetos com parecer do CEP geram um alerta de relatório após o prazo definido abaixo.
+            </p>
+
+            <div class="form-check">
+                {{ form.relatorio_ativo }}
+                <label for="{{ form.relatorio_ativo.id_for_label }}">{{ form.relatorio_ativo.label }}</label>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.prazo_relatorio_meses.id_for_label }}">{{ form.prazo_relatorio_meses.label }}</label>
+                {{ form.prazo_relatorio_meses }}
+                {% if form.prazo_relatorio_meses.errors %}<span class="error">{{ form.prazo_relatorio_meses.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.assunto_relatorio.id_for_label }}">{{ form.assunto_relatorio.label }}</label>
+                {{ form.assunto_relatorio }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.mensagem_relatorio.id_for_label }}">{{ form.mensagem_relatorio.label }}</label>
+                {{ form.mensagem_relatorio }}
+                <small class="form-text text-muted">
+                    Variáveis: {nome}, {titulo}, {sig_id}, {data_parecer_cep}, {prazo_relatorio}
+                </small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-salvar">Salvar Ajustes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
