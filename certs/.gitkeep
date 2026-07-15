@@ -1,0 +1,6 @@
+# Coloque aqui o certificado TLS fornecido pela infra:
+#   fullchain.pem  -> certificado + cadeia intermediária
+#   privkey.pem    -> chave privada
+#
+# Esta pasta é montada em /etc/nginx/certs no container nginx e persiste entre
+# rebuilds. Os arquivos .pem são ignorados pelo git (ver .gitignore).

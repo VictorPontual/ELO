@@ -2,12 +2,15 @@
 
 ## Requisitos
 
-- Windows 10/11
+- Docker Desktop (Windows/Linux/macOS)
 - Git
-- Docker Desktop (recomendado)
-- Opcional para execucao local: Python 3.12+ e PostgreSQL 16+
+- Opcional para desenvolvimento sem Docker: Python 3.12+ e PostgreSQL 16+
 
-## Instalacao e execucao (Docker)
+## Hospedagem local (Docker)
+
+O `docker-compose.yml` sobe o app (gunicorn) e um Postgres em container,
+servindo por HTTP na rede interna. As migracoes e o `collectstatic` rodam
+automaticamente no start.
 
 1) Clone o repositorio
 ```
@@ -18,27 +21,59 @@ cd ELO
 2) Crie o arquivo `.env` na raiz do projeto
 ```
 DJANGO_SECRET_KEY=uma-chave-forte
-DJANGO_DEBUG=True
+DJANGO_DEBUG=False
+# Inclua o IP/hostname do servidor (ex.: localhost,127.0.0.1,192.168.0.10):
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+DJANGO_CSRF_TRUSTED_ORIGINS=
+DJANGO_SECURE_SSL=False
+
 DB_NAME=elo
-DB_USER=elo_user
-DB_PASSWORD=senha
+DB_USER=postgres
+DB_PASSWORD=uma-senha-forte
 DB_HOST=db
 DB_PORT=5432
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=seu-email@gmail.com
+EMAIL_HOST_PASSWORD=senha-de-app
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=seu-email@gmail.com
 ```
 
 3) Suba os containers
 ```
-docker compose up --build
+docker compose up -d --build
 ```
 
-4) Rode as migracoes e crie o admin
+4) Crie o admin (primeira vez)
 ```
-docker compose exec web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
 ```
 
-5) Acesse o sistema
-- http://localhost:8000/
+5) Acesse pela rede
+- `http://IP-DO-SERVIDOR:8000/` (ou http://localhost:8000/ na propria maquina)
+
+### Observacoes
+
+- **HTTPS (opcional):** atras de um proxy reverso (Nginx/Traefik), defina no
+  `.env` `DJANGO_SECURE_SSL=True` e `DJANGO_CSRF_TRUSTED_ORIGINS=https://seu-dominio`.
+- **Avisos periodicos:** agende no host (cron no Linux ou Agendador de Tarefas no
+  Windows) o comando:
+  ```
+  docker compose exec -T web python manage.py enviar_avisos
+  ```
+- **Atualizar apos mudancas no codigo:**
+  ```
+  docker compose up -d --build
+  ```
+- **Erro "password authentication failed"** ao subir pela primeira vez apos ter
+  usado outra senha: o volume do Postgres foi criado com a senha antiga. Resete
+  (apaga o banco):
+  ```
+  docker compose down -v
+  docker compose up -d --build
+  ```
 
 ## Instalacao e execucao (local sem Docker)
 

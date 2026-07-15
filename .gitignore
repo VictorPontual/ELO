@@ -60,6 +60,8 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+# Banco SQLite usado só em testes locais (não versionar).
+db_local_test.sqlite3
 
 # Flask stuff:
 instance/
@@ -133,6 +135,10 @@ celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
+
+# Certificados TLS entregues pela infra (nunca comitar chaves privadas).
+/certs/*
+!/certs/.gitkeep
 
 # Environments
 .env

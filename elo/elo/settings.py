@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
-import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,14 +32,14 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 # (inclusive ausência) resulta em False, seguro para produção.
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-# Hosts liberados: lista separada por vírgula no env. Em produção (Vercel)
-# use algo como "meu-projeto.vercel.app,meu-dominio.com".
+# Hosts liberados: lista separada por vírgula no env. Inclua o IP/hostname do
+# servidor, ex.: "localhost,127.0.0.1,192.168.0.10".
 ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()
 ]
 
-# Origens confiáveis para CSRF (necessário atrás de HTTPS/domínio no Vercel).
-# Precisa incluir o esquema, ex.: "https://meu-projeto.vercel.app".
+# Origens confiáveis para CSRF (necessário apenas atrás de HTTPS/proxy TLS).
+# Precisa incluir o esquema, ex.: "https://elo.suarede.local".
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
 ]
@@ -49,10 +48,15 @@ CSRF_TRUSTED_ORIGINS = [
 if DEBUG and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# --- Segurança em produção (só quando DEBUG=False) ---
-# O Vercel termina o TLS e repassa o esquema original em X-Forwarded-Proto;
-# sem isso o Django não sabe que a conexão é HTTPS e o redirect entraria em loop.
-if not DEBUG:
+# --- Segurança HTTPS ---
+# Só habilita redirect/HSTS/cookies seguros quando DJANGO_SECURE_SSL=True, ou
+# seja, quando houver TLS na frente (proxy reverso). Em hospedagem local por
+# HTTP na rede interna, mantenha DJANGO_SECURE_SSL=False (padrão) — caso
+# contrário o Django força HTTPS e o site fica inacessível.
+SECURE_SSL = os.environ.get('DJANGO_SECURE_SSL', 'False') == 'True'
+if SECURE_SSL:
+    # O proxy/plataforma termina o TLS e repassa o esquema em X-Forwarded-Proto;
+    # sem isso o Django não sabe que a conexão é HTTPS e o redirect entra em loop.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -85,7 +89,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'contas.middleware.SessaoUnicaMiddleware',
     'contas.middleware.AdminOnlyAccessMiddleware',
+    'contas.middleware.RegistroAcoesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -112,33 +118,31 @@ WSGI_APPLICATION = 'elo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Postgres institucional externo (aponte DB_HOST/DB_PORT para o servidor da
+# rede). Também funciona com o container do docker-compose, se usado.
+#
+# DB_SSLMODE controla o TLS da conexão com o banco. Para um Postgres
+# institucional o comum é 'require' (ou 'verify-full' com DB_SSLROOTCERT
+# apontando para a CA). Deixe vazio para conexão sem TLS (ex.: container local).
+DB_OPTIONS = {}
+_db_sslmode = os.environ.get('DB_SSLMODE', '').strip()
+if _db_sslmode:
+    DB_OPTIONS['sslmode'] = _db_sslmode
+    _db_sslrootcert = os.environ.get('DB_SSLROOTCERT', '').strip()
+    if _db_sslrootcert:
+        DB_OPTIONS['sslrootcert'] = _db_sslrootcert
 
-# Em produção (Vercel + Supabase) usamos a variável DATABASE_URL apontando para
-# o Connection Pooler do Supabase (Supavisor, porta 6543, modo transaction).
-# CONN_MAX_AGE=0 é obrigatório em serverless: cada request abre e fecha a
-# conexão, evitando estourar o limite do pooler.
-# Sem DATABASE_URL (desenvolvimento), caímos no Postgres local do .env.
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=0,
-            ssl_require=True,
-        )
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
+        'OPTIONS': DB_OPTIONS,
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME'),
-            'USER': os.environ.get('DB_USER'),
-            'PASSWORD': os.environ.get('DB_PASSWORD'),
-            'HOST': os.environ.get('DB_HOST'),
-            'PORT': os.environ.get('DB_PORT'),
-        }
-    }
+}
 
 
 # Password validation
@@ -158,6 +162,87 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+# --- Autenticação LDAP (opcional) ---
+# Integração com o diretório institucional (Active Directory ou OpenLDAP).
+# Só é ativada quando AUTH_LDAP_SERVER_URI está preenchida no .env; caso
+# contrário o sistema continua usando apenas o backend padrão do Django.
+#
+# Diferença AD x OpenLDAP fica só no filtro de busca (LDAP_USER_FILTER):
+#   Active Directory:  (sAMAccountName=%(user)s)
+#   OpenLDAP/389-DS:   (uid=%(user)s)
+#
+# O ModelBackend permanece na lista para que o superusuário local (criado com
+# createsuperuser) continue conseguindo entrar mesmo se o LDAP estiver fora do ar.
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+
+AUTH_LDAP_SERVER_URI = os.environ.get('AUTH_LDAP_SERVER_URI', '').strip()
+if AUTH_LDAP_SERVER_URI:
+    import ldap
+    from django_auth_ldap.config import LDAPSearch, GroupOfNamesType, ActiveDirectoryGroupType
+
+    # Conta de serviço usada para pesquisar usuários no diretório.
+    AUTH_LDAP_BIND_DN = os.environ.get('AUTH_LDAP_BIND_DN', '')
+    AUTH_LDAP_BIND_PASSWORD = os.environ.get('AUTH_LDAP_BIND_PASSWORD', '')
+
+    _ldap_user_base = os.environ.get('LDAP_USER_SEARCH_BASE', '')
+    _ldap_user_filter = os.environ.get('LDAP_USER_FILTER', '(sAMAccountName=%(user)s)')
+    AUTH_LDAP_USER_SEARCH = LDAPSearch(
+        _ldap_user_base, ldap.SCOPE_SUBTREE, _ldap_user_filter,
+    )
+
+    # Mapeia atributos do diretório para os campos do User do Django.
+    AUTH_LDAP_USER_ATTR_MAP = {
+        'first_name': os.environ.get('LDAP_ATTR_FIRST_NAME', 'givenName'),
+        'last_name': os.environ.get('LDAP_ATTR_LAST_NAME', 'sn'),
+        'email': os.environ.get('LDAP_ATTR_EMAIL', 'mail'),
+    }
+
+    # Cria/atualiza o User local a cada login com os dados do diretório.
+    AUTH_LDAP_ALWAYS_UPDATE_USER = True
+
+    # Conexão TLS: quando o URI é ldaps:// (porta 636) o TLS já é implícito.
+    # Para ambiente de teste com certificado auto-assinado, defina
+    # LDAP_TLS_NO_VERIFY=True (NÃO use em produção).
+    if os.environ.get('LDAP_TLS_NO_VERIFY', 'False') == 'True':
+        AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER}
+
+    # Busca de grupos (opcional). Necessária para mapear staff/superuser e para
+    # exigir pertencimento a um grupo. Preencha LDAP_GROUP_SEARCH_BASE para usar.
+    _ldap_group_base = os.environ.get('LDAP_GROUP_SEARCH_BASE', '')
+    if _ldap_group_base:
+        _ldap_group_filter = os.environ.get('LDAP_GROUP_FILTER', '(objectClass=group)')
+        AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+            _ldap_group_base, ldap.SCOPE_SUBTREE, _ldap_group_filter,
+        )
+        # AD usa a estrutura de grupos do Active Directory; OpenLDAP usa
+        # groupOfNames. Selecione via LDAP_GROUP_TYPE=ad|openldap (padrão ad).
+        if os.environ.get('LDAP_GROUP_TYPE', 'ad').lower() == 'openldap':
+            AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+        else:
+            AUTH_LDAP_GROUP_TYPE = ActiveDirectoryGroupType()
+
+        # Só permite login de quem estiver neste grupo (opcional).
+        _ldap_require_group = os.environ.get('LDAP_REQUIRE_GROUP_DN', '')
+        if _ldap_require_group:
+            AUTH_LDAP_REQUIRE_GROUP = _ldap_require_group
+
+        # O login do sistema é restrito a contas administrativas (is_staff/
+        # is_superuser). Mapeie os grupos do diretório para essas flags, senão
+        # os usuários LDAP não conseguirão entrar.
+        _flags = {}
+        _staff_group = os.environ.get('LDAP_STAFF_GROUP_DN', '')
+        _superuser_group = os.environ.get('LDAP_SUPERUSER_GROUP_DN', '')
+        if _staff_group:
+            _flags['is_staff'] = _staff_group
+        if _superuser_group:
+            _flags['is_superuser'] = _superuser_group
+        if _flags:
+            AUTH_LDAP_USER_FLAGS_BY_GROUP = _flags
+
+    # Coloca o backend LDAP à frente do backend local.
+    AUTHENTICATION_BACKENDS.insert(0, 'django_auth_ldap.backend.LDAPBackend')
 
 
 # Internationalization
@@ -181,15 +266,12 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
-# Destino do `collectstatic` (quando executado). Em runtime no Vercel o
-# WhiteNoise consegue servir direto das pastas de origem via finders, então o
-# deploy não depende de rodar collectstatic no build.
+# Destino do `collectstatic` (executado no start do container).
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WHITENOISE_USE_FINDERS=True permite servir os estáticos direto de
 # STATICFILES_DIRS e das pastas static/ de cada app, mesmo sem collectstatic.
-# Usamos storage SEM manifest para não exigir o arquivo de manifest em runtime
-# (mais robusto em ambiente serverless).
+# Storage SEM manifest para não exigir o arquivo de manifest em runtime.
 WHITENOISE_USE_FINDERS = True
 
 STORAGES = {
@@ -200,10 +282,6 @@ STORAGES = {
         'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
     },
 }
-
-# Token compartilhado que protege o endpoint de disparo dos avisos (cron do
-# Vercel). Definido nas variáveis de ambiente; sem ele, o endpoint recusa tudo.
-CRON_SECRET = os.environ.get('CRON_SECRET', '')
 
 # Login/Logout redirects
 LOGIN_REDIRECT_URL = 'lista_projetos'

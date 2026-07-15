@@ -1,32 +1,44 @@
+# Hospedagem local em container, servindo por HTTPS na rede institucional.
+#
+#   docker compose up -d --build
+#
+# Arquitetura:
+#   nginx  -> termina o TLS (certificado da infra em ./certs) e repassa
+#   web    -> app Django com gunicorn (só exposto internamente ao nginx)
+#   banco  -> Postgres INSTITUCIONAL EXTERNO (aponte DB_HOST no .env); não há
+#             container de banco aqui.
+#
+# O app roda com gunicorn e as migrações + collectstatic rodam no start.
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     working_dir: /app/elo
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn elo.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    # Não publica porta no host: o acesso externo passa obrigatoriamente pelo
+    # nginx (HTTPS). Para depurar direto, adicione temporariamente "8000:8000".
+    expose:
+      - "8000"
     env_file:
       - .env
-    depends_on:
-      - db
-
-  db:
-    image: postgres:16-alpine
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      DJANGO_DEBUG: "False"
+      # Atrás do proxy TLS (nginx): habilita redirect HTTPS/HSTS/cookies seguros.
+      DJANGO_SECURE_SSL: "True"
+    restart: unless-stopped
 
-volumes:
-  postgres_data:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Certificado fornecido pela infra. A pasta ./certs no host persiste
+      # entre rebuilds do container (não é recriada no build).
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - web
+    restart: unless-stopped
