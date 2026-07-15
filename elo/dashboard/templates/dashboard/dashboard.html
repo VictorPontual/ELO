@@ -39,6 +39,12 @@
             <p class="kpi-footnote">Recorte trimestral em {{ ano_selecionado }}</p>
         </article>
 
+        <article class="kpi-card accent-green">
+            <p class="kpi-label">Aprovados no bimestre atual</p>
+            <h3>{{ kpis.aprovados_bimestre }}</h3>
+            <p class="kpi-footnote">{{ kpis.bimestre_atual }}o bimestre em {{ ano_selecionado }}</p>
+        </article>
+
         <article class="kpi-card accent-orange">
             <p class="kpi-label">Estudos em andamento</p>
             <h3>{{ kpis.estudos_andamento }}</h3>
@@ -72,6 +78,14 @@
                 <p>Aprovacoes por trimestre</p>
             </header>
             <canvas id="chartTrimestral"></canvas>
+        </article>
+
+        <article class="chart-card">
+            <header>
+                <h3>Distribuicao bimestral ({{ ano_selecionado }})</h3>
+                <p>Aprovacoes por bimestre</p>
+            </header>
+            <canvas id="chartBimestral"></canvas>
         </article>
     </section>
 

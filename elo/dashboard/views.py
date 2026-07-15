@@ -2,7 +2,7 @@ from collections import Counter
 from datetime import date
 
 from django.db.models import Count, Q
-from django.db.models.functions import ExtractQuarter, ExtractYear
+from django.db.models.functions import ExtractMonth, ExtractQuarter, ExtractYear
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
@@ -37,6 +37,7 @@ def _build_boolean_breakdown(queryset, field_name):
 def dashboard(request):
     hoje = date.today()
     trimestre_atual = ((hoje.month - 1) // 3) + 1
+    bimestre_atual = ((hoje.month - 1) // 2) + 1
 
     projetos_aprovados = Projeto.objects.exclude(data_aprovacao_inst__isnull=True)
 
@@ -71,6 +72,11 @@ def dashboard(request):
         data_aprovacao_inst__quarter=trimestre_atual
     ).count()
 
+    meses_bimestre_atual = [2 * bimestre_atual - 1, 2 * bimestre_atual]
+    aprovados_bimestre = aprovados_ano.filter(
+        data_aprovacao_inst__month__in=meses_bimestre_atual
+    ).count()
+
     estudos_andamento = Projeto.objects.filter(inicio_coleta__isnull=False).filter(
         Q(fim_coleta__isnull=True) | Q(fim_coleta__gte=hoje)
     ).count()
@@ -92,6 +98,17 @@ def dashboard(request):
     )
     for item in trimestral:
         mapa_trimestres[item['trimestre']] = item['total']
+
+    mapa_bimestres = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
+    por_mes = (
+        aprovados_ano
+        .annotate(mes=ExtractMonth('data_aprovacao_inst'))
+        .values('mes')
+        .annotate(total=Count('sig_id_projeto'))
+    )
+    for item in por_mes:
+        bimestre = ((item['mes'] - 1) // 2) + 1
+        mapa_bimestres[bimestre] += item['total']
 
     tipo_data = list(
         aprovados_ano
@@ -127,6 +144,10 @@ def dashboard(request):
             'labels': ['1o tri', '2o tri', '3o tri', '4o tri'],
             'values': [mapa_trimestres[1], mapa_trimestres[2], mapa_trimestres[3], mapa_trimestres[4]],
         },
+        'bimestral': {
+            'labels': ['1o bim', '2o bim', '3o bim', '4o bim', '5o bim', '6o bim'],
+            'values': [mapa_bimestres[i] for i in range(1, 7)],
+        },
         'tipo_pesquisa': {
             'labels': [item['tipo_pesq'] for item in tipo_data],
             'values': [item['total'] for item in tipo_data],
@@ -146,6 +167,8 @@ def dashboard(request):
         'kpis': {
             'total_aprovados': total_aprovados_ano,
             'aprovados_trimestre': aprovados_trimestre,
+            'aprovados_bimestre': aprovados_bimestre,
+            'bimestre_atual': bimestre_atual,
             'estudos_andamento': estudos_andamento,
             'variacao_percentual': variacao_percentual,
             'ano_comparacao': ano_selecionado - 1,

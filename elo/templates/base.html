@@ -18,7 +18,12 @@
                 <li><a href="{% url 'lista_projetos' %}">Projetos</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                    <li><a href="{% url 'cadastro' %}">Cadastrar Pesquisador</a></li>
+                    <li><a href="{% url 'lista_pesquisadores' %}">Pesquisadores</a></li>
+                    <li><a href="{% url 'gerenciar_avisos' %}">Avisos</a></li>
+                    <li><a href="{% url 'ajustes' %}">Ajustes</a></li>
+                    {% if user.is_superuser %}
+                    <li><a href="{% url 'registro_acoes' %}">Registro de Ações</a></li>
+                    {% endif %}
                     <li>Olá, {{ user.get_full_name|default:user.username }}</li>
                     <li>
                         <form method="post" action="{% url 'logout' %}" class="logout-form">

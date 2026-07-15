@@ -123,6 +123,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     buildLineChart('chartAnual', chartsData.anual.labels, chartsData.anual.values);
     buildBarChart('chartTrimestral', chartsData.trimestral.labels, chartsData.trimestral.values, palette.greenSoft);
+    if (chartsData.bimestral) {
+        buildBarChart('chartBimestral', chartsData.bimestral.labels, chartsData.bimestral.values, palette.cyanSoft);
+    }
     buildBarChart('chartTipo', chartsData.tipo_pesquisa.labels, chartsData.tipo_pesquisa.values, palette.orangeSoft, true);
     buildBarChart('chartClassificacao', chartsData.classificacao.labels, chartsData.classificacao.values, palette.slateSoft, true);
 
