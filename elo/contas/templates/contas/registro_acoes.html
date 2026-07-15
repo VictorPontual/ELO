@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+{% endblock %}
+
+{% block title %}Registro de Ações - ELO{% endblock %}
+
+{% block content %}
+<div class="header-container">
+    <h2>Registro de Ações</h2>
+</div>
+
+<form method="get" class="busca-container">
+    <select name="usuario" class="busca-filtro" onchange="this.form.submit()">
+        <option value="">Todas as contas</option>
+        {% for u in usuarios %}
+            <option value="{{ u }}" {% if u == usuario_filtro %}selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+    </select>
+    <noscript><button type="submit" class="btn-filtros">Filtrar</button></noscript>
+    <span class="busca-contador">{{ registros|length }} registro(s) (máx. 500)</span>
+</form>
+
+{% if registros %}
+    <table>
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Conta</th>
+                <th>Ação</th>
+                <th>Método</th>
+                <th>Caminho</th>
+                <th>IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in registros %}
+            <tr>
+                <td>{{ r.criado_em|date:"d/m/Y H:i:s" }}</td>
+                <td>{{ r.username|default:"-" }}</td>
+                <td>{{ r.acao }}</td>
+                <td>{{ r.metodo }}</td>
+                <td>{{ r.caminho }}</td>
+                <td>{{ r.ip|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="no-projects">Nenhuma ação registrada ainda.</p>
+{% endif %}
+{% endblock %}

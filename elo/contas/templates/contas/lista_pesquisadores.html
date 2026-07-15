@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+{% endblock %}
+
+{% block title %}Pesquisadores - ELO{% endblock %}
+
+{% block content %}
+<div class="header-container">
+    <h2>Pesquisadores</h2>
+    <a href="{% url 'cadastro' %}" class="btn-novo-projeto">+ Novo Pesquisador</a>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="mensagem {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+{% if pesquisadores %}
+    <div class="busca-container">
+        <input type="search" id="busca-pesquisadores" class="busca-input"
+               placeholder="Buscar por nome ou e-mail...">
+        <span id="busca-contador" class="busca-contador"></span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Celular</th>
+                <th>Formação</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pesquisadores %}
+            <tr class="linha-pesquisador"
+                data-nome="{{ p.user.get_full_name|default:p.user.username|lower }}"
+                data-email="{{ p.user.email|lower }}">
+                <td>{{ p.user.get_full_name|default:p.user.username }}</td>
+                <td>{{ p.user.email|default:"-" }}</td>
+                <td>{{ p.celular|default:"-" }}</td>
+                <td>{{ p.get_formacao_display }}</td>
+                <td>
+                    <a href="{% url 'editar_pesquisador' p.pk %}" class="btn-edit">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p id="sem-resultados" class="no-projects" style="display:none;">Nenhum pesquisador corresponde à busca.</p>
+{% else %}
+    <p class="no-projects">Nenhum pesquisador cadastrado ainda.</p>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const busca = document.getElementById('busca-pesquisadores');
+    if (!busca) return;
+    const linhas = Array.from(document.querySelectorAll('.linha-pesquisador'));
+    const contador = document.getElementById('busca-contador');
+    const semResultados = document.getElementById('sem-resultados');
+    const tabela = document.querySelector('table');
+
+    function normalizar(t) {
+        return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+    function aplicar() {
+        const termo = normalizar(busca.value.trim());
+        let visiveis = 0;
+        linhas.forEach(function (linha) {
+            const alvo = normalizar(linha.dataset.nome + ' ' + linha.dataset.email);
+            const mostrar = !termo || alvo.indexOf(termo) !== -1;
+            linha.style.display = mostrar ? '' : 'none';
+            if (mostrar) visiveis += 1;
+        });
+        if (contador) contador.textContent = visiveis + ' de ' + linhas.length + ' pesquisador(es)';
+        if (semResultados && tabela) {
+            const vazio = visiveis === 0;
+            semResultados.style.display = vazio ? 'block' : 'none';
+            tabela.style.display = vazio ? 'none' : '';
+        }
+    }
+    busca.addEventListener('input', aplicar);
+    aplicar();
+})();
+</script>
+{% endblock %}

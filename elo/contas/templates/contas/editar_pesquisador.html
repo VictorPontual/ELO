@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'contas/css/cadastro.css' %}">
+{% endblock %}
+
+{% block title %}Editar Pesquisador - ELO{% endblock %}
+
+{% block content %}
+<h2>Editar Pesquisador</h2>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="mensagem {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<form method="post" class="cadastro-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field-group">
+        {{ form.nome.label_tag }}
+        {{ form.nome }}
+        {{ form.nome.errors }}
+    </div>
+    <div class="field-group">
+        {{ form.formacao.label_tag }}
+        {{ form.formacao }}
+        {{ form.formacao.errors }}
+    </div>
+    <div class="phone-group">
+        <div class="field-group field-ddd">
+            {{ form.ddd.label_tag }}
+            {{ form.ddd }}
+            {{ form.ddd.errors }}
+        </div>
+        <div class="field-group field-celular">
+            {{ form.celular.label_tag }}
+            {{ form.celular }}
+            {{ form.celular.errors }}
+        </div>
+    </div>
+    <div class="field-group">
+        {{ form.email.label_tag }}
+        {{ form.email }}
+        {{ form.email.errors }}
+    </div>
+    <div class="field-group preference-group">
+        <p class="preference-title">Preferência de contato</p>
+        <div class="preference-options">
+            <label class="preference-option">
+                {{ form.preferencia_comunicacao_celular }}
+                <span>Celular</span>
+            </label>
+            <label class="preference-option">
+                {{ form.preferencia_comunicacao_email }}
+                <span>E-mail</span>
+            </label>
+        </div>
+        {{ form.preferencia_comunicacao_celular.errors }}
+        {{ form.preferencia_comunicacao_email.errors }}
+    </div>
+    <div class="field-group">
+        {{ form.whatsapp_apikey.label_tag }}
+        {{ form.whatsapp_apikey }}
+        {{ form.whatsapp_apikey.errors }}
+    </div>
+    <button type="submit">Salvar alterações</button>
+    <a href="{% url 'lista_pesquisadores' %}" class="btn-cancelar">Cancelar</a>
+</form>
+{% endblock %}
