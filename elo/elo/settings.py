@@ -173,8 +173,9 @@ AUTH_PASSWORD_VALIDATORS = [
 #   Active Directory:  (sAMAccountName=%(user)s)
 #   OpenLDAP/389-DS:   (uid=%(user)s)
 #
-# O ModelBackend permanece na lista para que o superusuário local (criado com
-# createsuperuser) continue conseguindo entrar mesmo se o LDAP estiver fora do ar.
+# Sem LDAP configurado (ex.: desenvolvimento), usa o backend local do Django.
+# Com LDAP ativo, este backend é REMOVIDO: a autenticação passa a ser
+# exclusivamente pelo AD, sem nenhuma senha guardada no banco da aplicação.
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
 
 AUTH_LDAP_SERVER_URI = os.environ.get('AUTH_LDAP_SERVER_URI', '').strip()
@@ -241,8 +242,10 @@ if AUTH_LDAP_SERVER_URI:
         if _flags:
             AUTH_LDAP_USER_FLAGS_BY_GROUP = _flags
 
-    # Coloca o backend LDAP à frente do backend local.
-    AUTHENTICATION_BACKENDS.insert(0, 'django_auth_ldap.backend.LDAPBackend')
+    # Autenticação exclusivamente via AD: substitui a lista inteira, sem
+    # fallback local. Nenhuma senha de usuário fica no banco da aplicação —
+    # quem valida a senha é sempre o Active Directory.
+    AUTHENTICATION_BACKENDS = ['django_auth_ldap.backend.LDAPBackend']
 
 
 # Internationalization
