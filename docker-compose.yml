@@ -18,13 +18,14 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.elo.rule=Host(`elo.hub.local`)"   # <-- confirmar com a infra
+      - "traefik.http.routers.elo.rule=Host(`elo.hub-unb.ebserh`)"
       - "traefik.http.routers.elo.entrypoints=websecure"
       - "traefik.http.routers.elo.tls=true"
       - "traefik.http.services.elo.loadbalancer.server.port=8000"
-      - "traefik.docker.network=traefik-network"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.nexterm.middlewares=public-chain@file"
 
 networks:
   traefik-network:
     external: true
-    name: NOME_DA_REDE_DO_TRAEFIK   # <-- confirmar com quem administra
+    name: traefik_proxy
