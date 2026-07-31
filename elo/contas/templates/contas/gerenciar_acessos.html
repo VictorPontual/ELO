@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+<style>
+    .acessos-tabela select { width: 100%; padding: 4px; }
+    .acessos-tabela th, .acessos-tabela td { text-align: center; vertical-align: middle; }
+    .acessos-tabela td.col-usuario { text-align: left; white-space: nowrap; }
+    .acessos-tabela .username { color: #666; font-size: 0.85em; }
+    .acessos-ajuda { color: #555; margin-bottom: 16px; }
+    .acessos-acoes { margin-top: 16px; }
+</style>
+{% endblock %}
+
+{% block title %}Gerenciar Acessos - ELO{% endblock %}
+
+{% block content %}
+<div class="header-container">
+    <h2>Gerenciar Acessos</h2>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="mensagem {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<p class="acessos-ajuda">
+    Defina o que cada conta administrativa pode fazer em cada página:
+    <strong>Sem acesso</strong>, <strong>Ver</strong> (apenas visualizar) ou
+    <strong>Ver e editar</strong>. O superadministrador sempre tem acesso total
+    e por isso não aparece na lista. Contas do AD surgem aqui após o primeiro login.
+</p>
+
+{% if linhas %}
+<form method="post">
+    {% csrf_token %}
+    <div class="busca-container">
+        <table class="acessos-tabela">
+            <thead>
+                <tr>
+                    <th class="col-usuario">Usuário</th>
+                    {% for area, label in areas %}
+                        <th>{{ label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in linhas %}
+                <tr>
+                    <td class="col-usuario">
+                        {{ linha.usuario.get_full_name|default:linha.usuario.username }}
+                        <div class="username">{{ linha.usuario.username }}</div>
+                    </td>
+                    {% for celula in linha.celulas %}
+                    <td>
+                        <select name="nivel_{{ linha.usuario.id }}_{{ celula.area }}">
+                            {% for valor, rotulo in niveis %}
+                                {% if not celula.somente_leitura or valor != 'editar' %}
+                                <option value="{{ valor }}" {% if valor == celula.nivel %}selected{% endif %}>{{ rotulo }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="acessos-acoes">
+        <button type="submit" class="btn-novo-projeto">Salvar acessos</button>
+    </div>
+</form>
+{% else %}
+    <p class="no-projects">
+        Nenhuma conta administrativa para gerenciar. As contas aparecem aqui
+        após o primeiro login pelo AD (ou ao criar um usuário com acesso ao painel).
+    </p>
+{% endif %}
+{% endblock %}

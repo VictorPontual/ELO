@@ -144,9 +144,12 @@ def renderizar_mensagem_alerta(template, pesquisador, projeto, config):
         return template
 
 
-def enviar_cobranca_email(projeto, tipo, config=None):
-    """Envia por e-mail a cobrança de um alerta (CEP ou relatório) ao pesquisador
-    principal. Retorna (sucesso, detalhe)."""
+def montar_cobranca_email(projeto, tipo, config=None):
+    """Monta (sem enviar) a cobrança de um alerta.
+
+    Retorna (pesquisador, assunto, mensagem). `pesquisador` é None quando não há
+    líder no projeto; nesse caso assunto/mensagem vêm vazios. Usado para
+    pré-visualizar o e-mail antes do envio."""
     from .models import ConfiguracaoAlertas
 
     if config is None:
@@ -154,7 +157,7 @@ def enviar_cobranca_email(projeto, tipo, config=None):
 
     pesquisador = obter_lider(projeto)
     if pesquisador is None:
-        return False, 'Projeto sem pesquisador principal associado.'
+        return None, '', ''
 
     if tipo == 'cep':
         assunto = config.assunto_cep
@@ -163,14 +166,36 @@ def enviar_cobranca_email(projeto, tipo, config=None):
         assunto = config.assunto_relatorio
         template = config.mensagem_relatorio
     else:
-        return False, 'Tipo de alerta inválido.'
+        return pesquisador, '', ''
 
     mensagem = renderizar_mensagem_alerta(template, pesquisador, projeto, config)
-    sucesso, detalhe = enviar_email(pesquisador, assunto, mensagem)
+    return pesquisador, assunto, mensagem
+
+
+def enviar_cobranca_email(projeto, tipo, config=None, assunto=None, mensagem=None):
+    """Envia por e-mail a cobrança de um alerta (CEP ou relatório) ao pesquisador
+    principal. Retorna (sucesso, detalhe).
+
+    Se `assunto`/`mensagem` forem informados (ex.: editados pelo usuário no
+    popup), usa-os; caso contrário gera o texto padrão da configuração."""
+    if config is None:
+        from .models import ConfiguracaoAlertas
+        config = ConfiguracaoAlertas.carregar()
+
+    pesquisador, assunto_padrao, mensagem_padrao = montar_cobranca_email(projeto, tipo, config)
+    if pesquisador is None:
+        return False, 'Projeto sem pesquisador principal associado.'
+    if tipo not in ('cep', 'relatorio'):
+        return False, 'Tipo de alerta inválido.'
+
+    assunto_final = assunto if assunto else assunto_padrao
+    mensagem_final = mensagem if mensagem else mensagem_padrao
+
+    sucesso, detalhe = enviar_email(pesquisador, assunto_final, mensagem_final)
     _registrar(
         projeto, pesquisador, 'email',
         (pesquisador.user.email or '').strip(),
-        assunto, mensagem, sucesso, detalhe,
+        assunto_final, mensagem_final, sucesso, detalhe,
     )
     return sucesso, detalhe
 

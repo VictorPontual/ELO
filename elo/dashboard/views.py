@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date
 
 from django.db.models import Count, Q
@@ -24,14 +24,50 @@ def _safe_int(value, fallback):
         return fallback
 
 
-def _build_boolean_breakdown(queryset, field_name):
+def _trimestre_idx(d):
+    """Índice 0..3 do trimestre de uma data."""
+    return (d.month - 1) // 3
+
+
+def _breakdown(projetos, categorias_fn, limite=None):
+    """Conta categorias no total e por trimestre (no ano já filtrado).
+
+    `categorias_fn(projeto)` devolve uma lista de categorias (permite M2M e
+    linhas de pesquisa múltiplas). Retorna
+    {labels, total, trimestres:[[q1..],[q2..],[q3..],[q4..]]} alinhado a labels.
+    """
+    total = Counter()
+    por_q = defaultdict(lambda: [0, 0, 0, 0])
+    for projeto in projetos:
+        if not projeto.data_aprovacao_inst:
+            continue
+        q = _trimestre_idx(projeto.data_aprovacao_inst)
+        for cat in categorias_fn(projeto):
+            if not cat:
+                continue
+            total[cat] += 1
+            por_q[cat][q] += 1
+    itens = total.most_common(limite)
+    labels = [c for c, _ in itens]
     return {
-        'labels': ['Sim', 'Nao'],
-        'values': [
-            queryset.filter(**{field_name: True}).count(),
-            queryset.filter(**{field_name: False}).count(),
-        ],
+        'labels': labels,
+        'total': [n for _, n in itens],
+        'trimestres': [[por_q[c][qi] for c in labels] for qi in range(4)],
     }
+
+
+def _breakdown_bool(projetos, valor_fn):
+    """Breakdown Sim/Não (ordem fixa) no total e por trimestre."""
+    total = [0, 0]
+    trimestres = [[0, 0] for _ in range(4)]
+    for projeto in projetos:
+        if not projeto.data_aprovacao_inst:
+            continue
+        idx = 0 if valor_fn(projeto) else 1
+        total[idx] += 1
+        trimestres[_trimestre_idx(projeto.data_aprovacao_inst)][idx] += 1
+    return {'labels': ['Sim', 'Não'], 'total': total, 'trimestres': trimestres}
+
 
 @login_required
 def dashboard(request):
@@ -77,10 +113,12 @@ def dashboard(request):
         data_aprovacao_inst__month__in=meses_bimestre_atual
     ).count()
 
-    estudos_andamento = Projeto.objects.filter(inicio_coleta__isnull=False).filter(
+    estudos_andamento_qs = Projeto.objects.filter(inicio_coleta__isnull=False).filter(
         Q(fim_coleta__isnull=True) | Q(fim_coleta__gte=hoje)
-    ).count()
+    )
+    estudos_andamento = estudos_andamento_qs.count()
 
+    # --- Painel Tempo ---
     serie_anual = list(
         projetos_aprovados
         .annotate(ano=ExtractYear('data_aprovacao_inst'))
@@ -110,30 +148,75 @@ def dashboard(request):
         bimestre = ((item['mes'] - 1) // 2) + 1
         mapa_bimestres[bimestre] += item['total']
 
-    tipo_data = list(
-        aprovados_ano
-        .exclude(tipo_pesq__isnull=True)
-        .exclude(tipo_pesq__exact='')
-        .values('tipo_pesq')
-        .annotate(total=Count('sig_id_projeto'))
-        .order_by('-total')[:8]
+    # Estudos em andamento por ano de início da coleta.
+    serie_andamento = Counter(
+        p.inicio_coleta.year for p in estudos_andamento_qs.only('inicio_coleta')
     )
+    anos_andamento = sorted(serie_andamento)
 
-    class_data = list(
-        aprovados_ano
-        .exclude(classificacoes__isnull=True)
-        .values('classificacoes__nome_classificacao')
-        .annotate(total=Count('sig_id_projeto', distinct=True))
-        .order_by('-total')[:8]
-    )
+    # --- Painel Distribuição (dimensões com total + por trimestre) ---
+    projetos_ano = list(aprovados_ano.prefetch_related('classificacoes', 'hospitais_parceiros'))
 
-    linhas_counter = Counter()
-    for projeto in aprovados_ano.only('linhas_pesq'):
-        for linha in _parse_linhas_pesquisa(projeto.linhas_pesq):
-            linhas_counter[linha] += 1
+    dist = {
+        'tipo_pesquisa': {
+            **_breakdown(projetos_ano, lambda p: [p.tipo_pesq], limite=10),
+            'tipo': 'barra',
+        },
+        'fomento': {
+            **_breakdown(projetos_ano, lambda p: [p.tipo_fomento], limite=10),
+            'tipo': 'barra',
+        },
+        'classificacao': {
+            **_breakdown(
+                projetos_ano,
+                lambda p: [c.nome_classificacao for c in p.classificacoes.all()],
+                limite=10,
+            ),
+            'tipo': 'barra',
+        },
+        'linhas': {
+            **_breakdown(projetos_ano, lambda p: _parse_linhas_pesquisa(p.linhas_pesq), limite=12),
+            'tipo': 'barra',
+        },
+        'tecnologico': {
+            **_breakdown(
+                projetos_ano,
+                lambda p: [p.get_desenvolvimento_tecnologico_display() or '(não informado)'],
+            ),
+            'tipo': 'rosca',
+        },
+        'multicentrico': {
+            **_breakdown_bool(projetos_ano, lambda p: p.multicentrico),
+            'tipo': 'rosca',
+        },
+        'integracao': {
+            **_breakdown_bool(projetos_ano, lambda p: p.parceria_HUB_UNB),
+            'tipo': 'rosca',
+        },
+        # "Realizado em conjunto com outros HUs da Rede HUBrasil": derivado da
+        # existência de hospitais parceiros vinculados ao projeto.
+        'rede_hubrasil': {
+            **_breakdown_bool(projetos_ano, lambda p: len(p.hospitais_parceiros.all()) > 0),
+            'tipo': 'rosca',
+        },
+    }
 
-    top_linhas = linhas_counter.most_common(10)
-    tabela_linhas = [{'linha': linha, 'total': total} for linha, total in top_linhas]
+    # Linhas de pesquisa: submetidos (entrada no SIG no ano) x aprovados no ano.
+    submetidos_linha = Counter()
+    for p in Projeto.objects.filter(data_ent_sig__year=ano_selecionado).only('linhas_pesq'):
+        for linha in _parse_linhas_pesquisa(p.linhas_pesq):
+            submetidos_linha[linha] += 1
+    aprovados_linha = Counter()
+    for p in projetos_ano:
+        for linha in _parse_linhas_pesquisa(p.linhas_pesq):
+            aprovados_linha[linha] += 1
+    labels_sa = [linha for linha, _ in (submetidos_linha + aprovados_linha).most_common(12)]
+    dist['linhas_sub_aprov'] = {
+        'labels': labels_sa,
+        'submetidos': [submetidos_linha[linha] for linha in labels_sa],
+        'aprovados': [aprovados_linha[linha] for linha in labels_sa],
+        'tipo': 'sub_aprov',
+    }
 
     charts = {
         'anual': {
@@ -148,17 +231,11 @@ def dashboard(request):
             'labels': ['1o bim', '2o bim', '3o bim', '4o bim', '5o bim', '6o bim'],
             'values': [mapa_bimestres[i] for i in range(1, 7)],
         },
-        'tipo_pesquisa': {
-            'labels': [item['tipo_pesq'] for item in tipo_data],
-            'values': [item['total'] for item in tipo_data],
+        'andamento': {
+            'labels': [str(ano) for ano in anos_andamento],
+            'values': [serie_andamento[ano] for ano in anos_andamento],
         },
-        'classificacao': {
-            'labels': [item['classificacoes__nome_classificacao'] for item in class_data],
-            'values': [item['total'] for item in class_data],
-        },
-        'tecnologico': _build_boolean_breakdown(aprovados_ano, 'desenvolvimento_tecnologico'),
-        'multicentrico': _build_boolean_breakdown(aprovados_ano, 'multicentrico'),
-        'integracao': _build_boolean_breakdown(aprovados_ano, 'parceria_HUB_UNB'),
+        'dist': dist,
     }
 
     context = {
@@ -173,7 +250,6 @@ def dashboard(request):
             'variacao_percentual': variacao_percentual,
             'ano_comparacao': ano_selecionado - 1,
         },
-        'tabela_linhas': tabela_linhas,
         'charts': charts,
     }
 

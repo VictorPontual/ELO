@@ -15,14 +15,27 @@
                 <a href="/">ELO</a>
             </div>
             <ul>
-                <li><a href="{% url 'lista_projetos' %}">Projetos</a></li>
                 {% if user.is_authenticated %}
+                    {% if 'projetos' in areas_visiveis %}
+                    <li><a href="{% url 'lista_projetos' %}">Projetos</a></li>
+                    {% endif %}
+                    {% if 'dashboard' in areas_visiveis %}
                     <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    {% endif %}
+                    {% if 'pesquisadores' in areas_visiveis %}
                     <li><a href="{% url 'lista_pesquisadores' %}">Pesquisadores</a></li>
+                    {% endif %}
+                    {% if 'avisos' in areas_visiveis %}
                     <li><a href="{% url 'gerenciar_avisos' %}">Avisos</a></li>
+                    {% endif %}
+                    {% if 'ajustes' in areas_visiveis %}
                     <li><a href="{% url 'ajustes' %}">Ajustes</a></li>
-                    {% if user.is_superuser %}
+                    {% endif %}
+                    {% if 'registro_acoes' in areas_visiveis %}
                     <li><a href="{% url 'registro_acoes' %}">Registro de Ações</a></li>
+                    {% endif %}
+                    {% if user.is_superuser %}
+                    <li><a href="{% url 'gerenciar_acessos' %}">Acessos</a></li>
                     {% endif %}
                     <li>Olá, {{ user.get_full_name|default:user.username }}</li>
                     <li>

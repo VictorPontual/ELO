@@ -5,6 +5,37 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<style>
+    .painel-controls {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        margin-left: auto;
+    }
+    .seg-toggle { display: inline-flex; border: 1px solid #ccd1d9; border-radius: 8px; overflow: hidden; }
+    .seg-btn {
+        border: none; background: #fff; color: #4f647d; padding: 6px 14px;
+        font-size: 13px; cursor: pointer; transition: background-color .15s, color .15s;
+    }
+    .seg-btn + .seg-btn { border-left: 1px solid #e2e6eb; }
+    .seg-btn:hover { background: #eef3fb; }
+    .seg-btn.ativo { background: #00a3a3; color: #fff; }
+    .dist-select {
+        padding: 7px 10px; border: 1px solid #ccd1d9; border-radius: 8px;
+        font-size: 13px; background: #fff; color: #2c3e50;
+    }
+    .dist-check {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 13px; color: #4f647d; cursor: pointer;
+    }
+    .dist-check input { cursor: pointer; }
+    .dist-check.desabilitado { opacity: .45; cursor: not-allowed; }
+    .painel-fluido header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .painel-fluido header .painel-titulo { display: flex; flex-direction: column; }
+    .painel-chart { position: relative; height: 340px; margin-top: 12px; }
+    .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -63,95 +94,49 @@
         </article>
     </section>
 
-    <section class="chart-grid chart-grid-main">
-        <article class="chart-card">
-            <header>
-                <h3>Tendencia anual</h3>
-                <p>Volume de projetos aprovados por ano</p>
-            </header>
-            <canvas id="chartAnual"></canvas>
-        </article>
-
-        <article class="chart-card">
-            <header>
-                <h3>Distribuicao trimestral ({{ ano_selecionado }})</h3>
-                <p>Aprovacoes por trimestre</p>
-            </header>
-            <canvas id="chartTrimestral"></canvas>
-        </article>
-
-        <article class="chart-card">
-            <header>
-                <h3>Distribuicao bimestral ({{ ano_selecionado }})</h3>
-                <p>Aprovacoes por bimestre</p>
-            </header>
-            <canvas id="chartBimestral"></canvas>
-        </article>
-    </section>
-
     <section class="chart-grid chart-grid-secondary">
-        <article class="chart-card">
+        <article class="chart-card painel-fluido">
             <header>
-                <h3>Tipo de pesquisa</h3>
-                <p>Top categorias por aprovacao</p>
+                <div class="painel-titulo">
+                    <h3>Aprovacoes ao longo do tempo</h3>
+                    <p>Projetos aprovados em {{ ano_selecionado }} (ou tendencia por ano)</p>
+                </div>
+                <div class="painel-controls" role="group" aria-label="Granularidade">
+                    <div class="seg-toggle">
+                        <button type="button" class="seg-btn ativo" data-serie="anual">Ano</button>
+                        <button type="button" class="seg-btn" data-serie="trimestral">Trimestre</button>
+                        <button type="button" class="seg-btn" data-serie="bimestral">Bimestre</button>
+                        <button type="button" class="seg-btn" data-serie="andamento">Em andamento</button>
+                    </div>
+                </div>
             </header>
-            <canvas id="chartTipo"></canvas>
+            <div class="painel-chart"><canvas id="chartTempo"></canvas></div>
         </article>
 
-        <article class="chart-card">
+        <article class="chart-card painel-fluido">
             <header>
-                <h3>Classificacao institucional</h3>
-                <p>Distribuicao por classificacao</p>
+                <div class="painel-titulo">
+                    <h3>Distribuicao dos projetos</h3>
+                    <p>Perfil dos aprovados em {{ ano_selecionado }}</p>
+                </div>
+                <div class="painel-controls">
+                    <label class="dist-check"><input type="checkbox" id="dist-trim"> por trimestre</label>
+                    <label for="dist-dim" class="sr-only">Dimensao</label>
+                    <select id="dist-dim" class="dist-select">
+                        <option value="tipo_pesquisa">Tipo de pesquisa</option>
+                        <option value="fomento">Fontes de fomento</option>
+                        <option value="classificacao">Classificacao institucional</option>
+                        <option value="linhas">Linhas de pesquisa</option>
+                        <option value="linhas_sub_aprov">Linhas: submetidos x aprovados</option>
+                        <option value="tecnologico">Desenvolvimento tecnologico</option>
+                        <option value="multicentrico">Multicentrico</option>
+                        <option value="integracao">Integracao UNB-HUB</option>
+                        <option value="rede_hubrasil">Realizado com outros HUs (HUBrasil)</option>
+                    </select>
+                </div>
             </header>
-            <canvas id="chartClassificacao"></canvas>
+            <div class="painel-chart"><canvas id="chartDist"></canvas></div>
         </article>
-    </section>
-
-    <section class="chart-grid chart-grid-boolean">
-        <article class="mini-card">
-            <h3>Desenvolvimento tecnologico</h3>
-            <canvas id="chartTecnologico"></canvas>
-        </article>
-
-        <article class="mini-card">
-            <h3>Multicentrico</h3>
-            <canvas id="chartMulticentrico"></canvas>
-        </article>
-
-        <article class="mini-card">
-            <h3>Integracao UNB-HUB</h3>
-            <canvas id="chartIntegracao"></canvas>
-        </article>
-    </section>
-
-    <section class="table-card">
-        <header>
-            <h3>Linhas de pesquisa com mais aprovacoes</h3>
-            <p>Top 10 linhas no recorte de {{ ano_selecionado }}</p>
-        </header>
-
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Linha de pesquisa</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in tabela_linhas %}
-                        <tr>
-                            <td>{{ item.linha }}</td>
-                            <td>{{ item.total }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="2">Sem dados de linhas de pesquisa para o periodo selecionado.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </section>
 </div>
 

@@ -1,7 +1,30 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+from .acesso import AREAS, NIVEIS, NIVEL_NENHUM
+
 # Create your models here.
+
+
+class AcessoPagina(models.Model):
+    """Nível de acesso de um usuário a uma página/área do sistema.
+
+    A ausência de registro equivale a "sem acesso". O superusuário sempre tem
+    acesso total (tratado no código, sem depender destes registros)."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='acessos_pagina'
+    )
+    area = models.CharField(max_length=30, choices=AREAS)
+    nivel = models.CharField(max_length=10, choices=NIVEIS, default=NIVEL_NENHUM)
+
+    class Meta:
+        unique_together = ('user', 'area')
+        verbose_name = 'Acesso a Página'
+        verbose_name_plural = 'Acessos a Páginas'
+
+    def __str__(self):
+        return f'{self.user.username} · {self.area} · {self.nivel}'
 
 
 class SessaoAtiva(models.Model):

@@ -112,3 +112,55 @@ class AdminOnlyAccessMiddleware:
                 return redirect('login')
 
         return self.get_response(request)
+
+
+class ControleAcessoMiddleware:
+    """Aplica o controle de acesso por página (ver/editar) definido pelo
+    superadmin em contas.acesso. Deve rodar depois do AdminOnlyAccessMiddleware.
+
+    Usa process_view porque o url_name só está disponível após a resolução da
+    URL. Superusuário e páginas não mapeadas passam direto."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from . import acesso
+
+        user = getattr(request, 'user', None)
+        if not (user and user.is_authenticated) or user.is_superuser:
+            return None
+
+        url_name = getattr(getattr(request, 'resolver_match', None), 'url_name', None)
+        area = acesso.URL_AREA.get(url_name)
+        if area is None:
+            return None  # página não controlada (login, logout, gestão, etc.)
+
+        nivel = acesso.nivel_do_usuario(user, area)
+        if nivel == acesso.NIVEL_NENHUM:
+            return self._negar(request, 'Você não tem acesso a esta página.')
+
+        if acesso.requer_editar(url_name, request.method) and nivel != acesso.NIVEL_EDITAR:
+            return self._negar(request, 'Você tem acesso apenas de visualização nesta página.')
+
+        return None
+
+    def _negar(self, request, mensagem):
+        from . import acesso
+
+        messages.error(request, mensagem)
+        destino = acesso.primeira_area_acessivel(request.user)
+        atual = getattr(getattr(request, 'resolver_match', None), 'url_name', None)
+        if destino and destino != atual:
+            return redirect(destino)
+
+        # Sem nenhuma página acessível: encerra a sessão.
+        logout(request)
+        messages.error(
+            request,
+            'Sua conta não tem acesso a nenhuma página. Contate o administrador.',
+        )
+        return redirect('login')

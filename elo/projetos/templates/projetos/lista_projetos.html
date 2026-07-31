@@ -3,6 +3,59 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'projetos/css/lista_projetos.css' %}">
+<style>
+    .col-id { white-space: nowrap; font-variant-numeric: tabular-nums; color: #555; }
+    .col-alerta { text-align: center; white-space: nowrap; }
+    .alerta-badge {
+        font-size: 1.15em; margin: 0 2px; cursor: pointer;
+        background: none; border: none; padding: 2px 4px; line-height: 1;
+        border-radius: 6px; transition: background-color .15s;
+    }
+    .alerta-badge:hover { background-color: rgba(0,0,0,.06); }
+    .col-alerta .sem-alerta { color: #ccc; }
+
+    /* Popup de cobrança */
+    .modal-cobranca__content { max-width: 560px; }
+    .cobranca-aviso { color: #7f8c8d; font-size: 13px; margin-top: 8px; }
+    .cobranca-campo {
+        display: flex; flex-direction: column; gap: 4px;
+        font-size: 13px; font-weight: 600; color: #2c3e50; margin-top: 12px;
+    }
+    .cobranca-input, .cobranca-textarea {
+        padding: 8px 10px; border: 1px solid #ccd1d9; border-radius: 5px;
+        font-size: 14px; font-weight: 400; font-family: inherit; width: 100%;
+        box-sizing: border-box;
+    }
+    .cobranca-textarea { resize: vertical; min-height: 160px; }
+    .cobranca-input:focus, .cobranca-textarea:focus {
+        outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,.15);
+    }
+    .cobranca-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-cancelar {
+        background: #e6e9ed; color: #2c3e50; border: 1px solid #ccd1d9;
+        border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 14px;
+    }
+    .btn-cancelar:hover { background: #d8dde3; }
+
+    /* Autocomplete da busca */
+    .busca-input-wrapper { position: relative; flex: 1 1 320px; min-width: 220px; }
+    .busca-input-wrapper .busca-input { width: 100%; box-sizing: border-box; }
+    .busca-sugestoes {
+        position: absolute; top: 100%; left: 0; right: 0; z-index: 40;
+        margin: 3px 0 0; padding: 4px 0; list-style: none; background: #fff;
+        border: 1px solid #ccd1d9; border-radius: 6px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.12); max-height: 280px; overflow-y: auto;
+    }
+    .busca-sugestoes[hidden] { display: none; }
+    .busca-sugestao { padding: 8px 14px; cursor: pointer; font-size: 14px; }
+    .busca-sugestao:hover, .busca-sugestao.ativa { background: #eef3fb; }
+
+    /* Filtro por range (de/até) */
+    .painel-filtros__range { display: flex; align-items: center; gap: 6px; }
+    .painel-filtros__range[hidden] { display: none; }
+    .painel-filtros__range .painel-filtros__input { flex: 1; min-width: 0; }
+    .painel-filtros__range-sep { color: #666; font-size: 13px; font-weight: 400; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -93,27 +146,28 @@
 
 {% if projetos %}
     <div class="busca-container">
-        <input type="search" id="busca-projetos" class="busca-input"
-               placeholder="Buscar por título, pesquisador principal ou tipo...">
+        <div class="busca-input-wrapper">
+            <input type="search" id="busca-projetos" class="busca-input" autocomplete="off"
+                   placeholder="Buscar por título, pesquisador principal ou tipo...">
+            <ul id="busca-sugestoes" class="busca-sugestoes" hidden></ul>
+        </div>
         <div class="filtros-menu-wrapper">
             <button type="button" id="btn-abrir-filtros" class="btn-filtros">Filtros ▾</button>
             <div id="painel-filtros" class="painel-filtros" hidden>
                 <label class="painel-filtros__label">
                     Campo
-                    <select id="filtro-campo" class="painel-filtros__select">
-                        <option value="titulo">Título</option>
-                        <option value="lider">Pesquisador principal</option>
-                        <option value="tipo">Tipo de pesquisa</option>
-                        <option value="especialidade">Especialidade</option>
-                        <option value="instituicao">Instituição</option>
-                        <option value="classificacao">Classificação</option>
-                    </select>
+                    <select id="filtro-campo" class="painel-filtros__select"></select>
                 </label>
                 <label class="painel-filtros__label">
                     Valor
                     <select id="filtro-valor-select" class="painel-filtros__select"></select>
                     <input type="text" id="filtro-valor-input" class="painel-filtros__input"
                            placeholder="Digite o texto" hidden>
+                    <span id="filtro-valor-range" class="painel-filtros__range" hidden>
+                        <input type="date" id="filtro-range-min" class="painel-filtros__input" aria-label="De">
+                        <span class="painel-filtros__range-sep">até</span>
+                        <input type="date" id="filtro-range-max" class="painel-filtros__input" aria-label="Até">
+                    </span>
                 </label>
                 <button type="button" id="btn-aplicar-filtro" class="btn-aplicar-filtro">Aplicar filtro</button>
             </div>
@@ -126,33 +180,108 @@
     <table>
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Nome do Projeto</th>
                 <th>Pesquisador Principal</th>
                 <th>Tipo</th>
                 <th>Ações</th>
+                <th>Alerta</th>
             </tr>
         </thead>
         <tbody>
             {% for projeto in projetos %}
             <tr class="linha-projeto"
-                data-titulo="{{ projeto.titulo|lower }}"
-                data-lider="{{ projeto.lider_principal|lower }}"
-                data-tipo="{{ projeto.tipo_pesq|default:''|lower }}"
-                data-especialidade="{{ projeto.especialidade_proponente|default:''|lower }}"
-                data-instituicao="{{ projeto.instituicao_proponente|default:''|lower }}"
-                data-classificacao="{% for c in projeto.classificacoes.all %}{{ c.nome_classificacao|lower }}{% if not forloop.last %} | {% endif %}{% endfor %}">
+                data-titulo="{{ projeto.titulo }}"
+                data-lider="{{ projeto.lider_principal }}"
+                data-tipo="{{ projeto.tipo_pesq|default:'' }}"
+                data-subtipo="{{ projeto.sub_tipo_pesq|default:'' }}"
+                data-especialidade="{{ projeto.especialidade_proponente|default:'' }}"
+                data-instituicao="{{ projeto.instituicao_proponente|default:'' }}"
+                data-classificacao="{% for c in projeto.classificacoes.all %}{{ c.nome_classificacao }}{% if not forloop.last %} | {% endif %}{% endfor %}"
+                data-classinst="{{ projeto.class_inst|default:'' }}"
+                data-fomento="{{ projeto.tipo_fomento|default:'' }}"
+                data-provedor="{{ projeto.provedor_fomento|default:'' }}"
+                data-parecer="{{ projeto.get_parecer_cep_display|default:'' }}"
+                data-multicentrico="{{ projeto.multicentrico|yesno:'Sim,Não' }}"
+                data-alerta="{% if projeto.alerta_cep %}Parecer do CEP pendente{% endif %}{% if projeto.alerta_cep and projeto.alerta_relatorio %} | {% endif %}{% if projeto.alerta_relatorio %}Relatório pendente{% endif %}{% if not projeto.alerta_cep and not projeto.alerta_relatorio %}Sem alerta{% endif %}"
+                data-aprovacao="{{ projeto.data_aprovacao_inst|date:'Y-m-d' }}"
+                data-parecercep="{{ projeto.data_parecer_cep|date:'Y-m-d' }}">
+                <td class="col-id">{{ projeto.sig_id_projeto }}</td>
                 <td>{{ projeto.titulo }}</td>
                 <td>{{ projeto.lider_principal|default:"-" }}</td>
                 <td>{{ projeto.tipo_pesq|default:"-" }}</td>
                 <td>
                     <button class="btn-detalhes" data-projeto-id="{{ projeto.sig_id_projeto }}">+</button>
                 </td>
+                <td class="col-alerta">
+                    {% if projeto.alerta_cep %}
+                    <button type="button" class="alerta-badge btn-cobranca"
+                            title="Parecer do CEP pendente — clique para cobrar"
+                            data-titulo="{{ projeto.titulo }}"
+                            data-tipo="Parecer do CEP"
+                            data-destinatario="{{ projeto.alerta_cep.destinatario }}"
+                            data-assunto="{{ projeto.alerta_cep.assunto }}"
+                            data-mensagem="{{ projeto.alerta_cep.mensagem }}"
+                            {% if user.is_staff or user.is_superuser %}data-action="{% url 'enviar_cobranca_alerta' projeto.sig_id_projeto 'cep' %}"{% endif %}>⚠️</button>
+                    {% endif %}
+                    {% if projeto.alerta_relatorio %}
+                    <button type="button" class="alerta-badge btn-cobranca"
+                            title="Relatório pendente — clique para cobrar"
+                            data-titulo="{{ projeto.titulo }}"
+                            data-tipo="Relatório"
+                            data-destinatario="{{ projeto.alerta_relatorio.destinatario }}"
+                            data-assunto="{{ projeto.alerta_relatorio.assunto }}"
+                            data-mensagem="{{ projeto.alerta_relatorio.mensagem }}"
+                            {% if user.is_staff or user.is_superuser %}data-action="{% url 'enviar_cobranca_alerta' projeto.sig_id_projeto 'relatorio' %}"{% endif %}>📄</button>
+                    {% endif %}
+                    {% if not projeto.alerta_cep and not projeto.alerta_relatorio %}<span class="sem-alerta">—</span>{% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     <p id="sem-resultados" class="no-projects" style="display:none;">Nenhum projeto corresponde aos filtros.</p>
-    
+
+    <!-- Popup de cobrança (preenchido via JS ao clicar num ícone de alerta) -->
+    <div id="modal-cobranca" class="modal" style="display:none;">
+        <div class="modal-content modal-cobranca__content">
+            <span class="close" id="fechar-cobranca">&times;</span>
+            <div class="modal-header">
+                <h2>Enviar cobrança</h2>
+            </div>
+            <div class="detalhes-section">
+                <p><strong id="cobranca-tipo"></strong> — <span id="cobranca-titulo"></span></p>
+                <p class="cobranca-aviso">Para: <span id="cobranca-destinatario"></span></p>
+                <p class="cobranca-aviso">
+                    Confira e edite o e-mail abaixo antes de enviar. O envio vai para o
+                    pesquisador principal do projeto.
+                </p>
+                <p id="cobranca-sem-permissao" class="cobranca-aviso" style="display:none;">
+                    Apenas contas administrativas podem enviar cobrança.
+                </p>
+            </div>
+            <form method="post" id="form-cobranca">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <label class="cobranca-campo">
+                    Assunto
+                    <input type="text" name="assunto" id="cobranca-assunto" class="cobranca-input">
+                </label>
+                <label class="cobranca-campo">
+                    Mensagem
+                    <textarea name="mensagem" id="cobranca-mensagem" class="cobranca-textarea" rows="10"></textarea>
+                </label>
+                <div class="cobranca-acoes">
+                    <button type="button" class="btn-cancelar" id="cancelar-cobranca">Cancelar</button>
+                    <button type="submit" class="btn-cobrar"
+                            onclick="return confirm('Enviar este e-mail de cobrança ao pesquisador principal?');">
+                        Enviar cobrança
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modais fora da tabela -->
     {% for projeto in projetos %}
     <div id="modal-{{ projeto.sig_id_projeto }}" class="modal" style="display: none;">

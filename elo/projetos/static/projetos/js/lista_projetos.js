@@ -48,14 +48,30 @@ document.addEventListener('DOMContentLoaded', function() {
 // Busca + filtros combináveis da lista de projetos.
 // ---------------------------------------------------------------------------
 (function () {
+    // Campos filtráveis. tipo: 'texto' (contém), 'lista' (valor exato de um
+    // conjunto) ou 'range' (intervalo de/até; subtipo 'data' ou 'numero').
     const CAMPOS = {
-        titulo: { label: 'Título', tipo: 'texto', attr: 'titulo' },
-        lider: { label: 'Pesquisador principal', tipo: 'texto', attr: 'lider' },
-        tipo: { label: 'Tipo de pesquisa', tipo: 'lista', attr: 'tipo' },
+        titulo:        { label: 'Título', tipo: 'texto', attr: 'titulo' },
+        lider:         { label: 'Pesquisador principal', tipo: 'texto', attr: 'lider' },
+        tipo:          { label: 'Tipo de pesquisa', tipo: 'lista', attr: 'tipo' },
+        subtipo:       { label: 'Sub-tipo de pesquisa', tipo: 'lista', attr: 'subtipo' },
         especialidade: { label: 'Especialidade', tipo: 'lista', attr: 'especialidade' },
-        instituicao: { label: 'Instituição', tipo: 'lista', attr: 'instituicao' },
+        instituicao:   { label: 'Instituição', tipo: 'lista', attr: 'instituicao' },
         classificacao: { label: 'Classificação', tipo: 'lista', attr: 'classificacao' },
+        classinst:     { label: 'Classificação institucional', tipo: 'lista', attr: 'classinst' },
+        fomento:       { label: 'Tipo de fomento', tipo: 'lista', attr: 'fomento' },
+        provedor:      { label: 'Provedor de fomento', tipo: 'lista', attr: 'provedor' },
+        parecer:       { label: 'Parecer CEP', tipo: 'lista', attr: 'parecer' },
+        multicentrico: { label: 'Multicêntrico', tipo: 'lista', attr: 'multicentrico' },
+        alerta:        { label: 'Alerta', tipo: 'lista', attr: 'alerta' },
+        aprovacao:     { label: 'Data de aprovação institucional', tipo: 'range', subtipo: 'data', attr: 'aprovacao' },
+        parecercep:    { label: 'Data do parecer CEP', tipo: 'range', subtipo: 'data', attr: 'parecercep' },
     };
+
+    // Minúsculas + sem acentos, para comparação/busca tolerante.
+    function normalizar(t) {
+        return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         const busca = document.getElementById('busca-projetos');
@@ -67,13 +83,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const selCampo = document.getElementById('filtro-campo');
         const selValor = document.getElementById('filtro-valor-select');
         const inputValor = document.getElementById('filtro-valor-input');
+        const rangeBox = document.getElementById('filtro-valor-range');
+        const rangeMin = document.getElementById('filtro-range-min');
+        const rangeMax = document.getElementById('filtro-range-max');
         const btnAplicar = document.getElementById('btn-aplicar-filtro');
         const filtrosAtivos = document.getElementById('filtros-ativos');
         const contador = document.getElementById('busca-contador');
         const semResultados = document.getElementById('sem-resultados');
         const tabela = document.querySelector('table');
+        const sugestoesBox = document.getElementById('busca-sugestoes');
 
-        const ativos = []; // { campo, attr, valor, label, tipo }
+        const ativos = []; // { campo, attr, tipo, valor, label, [min,max,subtipo] }
+
+        // Preenche o seletor de campos a partir de CAMPOS (fonte única).
+        selCampo.innerHTML = '';
+        Object.keys(CAMPOS).forEach(function (chave) {
+            const opt = document.createElement('option');
+            opt.value = chave;
+            opt.textContent = CAMPOS[chave].label;
+            selCampo.appendChild(opt);
+        });
 
         function valoresDistintos(attr) {
             const set = new Set();
@@ -85,32 +114,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (v) set.add(v);
                 });
             });
-            return Array.from(set).sort(function (a, b) { return a.localeCompare(b); });
+            return Array.from(set).sort(function (a, b) { return a.localeCompare(b, 'pt-BR'); });
         }
 
         function atualizarEntradaValor() {
             const cfg = CAMPOS[selCampo.value];
+            selValor.hidden = cfg.tipo !== 'lista';
+            inputValor.hidden = cfg.tipo !== 'texto';
+            rangeBox.hidden = cfg.tipo !== 'range';
+
             if (cfg.tipo === 'texto') {
-                selValor.hidden = true;
-                inputValor.hidden = false;
                 inputValor.value = '';
-            } else {
-                inputValor.hidden = true;
-                selValor.hidden = false;
+            } else if (cfg.tipo === 'lista') {
                 selValor.innerHTML = '';
-                valoresDistintos(cfg.attr).forEach(function (v) {
+                const valores = valoresDistintos(cfg.attr);
+                valores.forEach(function (v) {
                     const opt = document.createElement('option');
                     opt.value = v;
                     opt.textContent = v;
                     selValor.appendChild(opt);
                 });
-                if (!selValor.options.length) {
+                if (!valores.length) {
                     const opt = document.createElement('option');
                     opt.value = '';
                     opt.textContent = '(sem valores)';
                     selValor.appendChild(opt);
                 }
+            } else { // range
+                const tipoInput = cfg.subtipo === 'numero' ? 'number' : 'date';
+                rangeMin.type = tipoInput;
+                rangeMax.type = tipoInput;
+                rangeMin.value = '';
+                rangeMax.value = '';
             }
+        }
+
+        function fmtData(iso) {
+            const p = (iso || '').split('-'); // YYYY-MM-DD -> DD/MM/YYYY
+            return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+        }
+
+        function rotuloRange(cfg, min, max) {
+            const fmt = cfg.subtipo === 'data' ? fmtData : function (v) { return v; };
+            if (min && max) return 'de ' + fmt(min) + ' até ' + fmt(max);
+            if (min) return 'a partir de ' + fmt(min);
+            if (max) return 'até ' + fmt(max);
+            return '';
         }
 
         function renderChips() {
@@ -136,6 +185,29 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        function itemCasa(f, linha) {
+            const raw = (linha.dataset[f.attr] || '').trim();
+            if (f.tipo === 'range') {
+                if (!raw) return false;
+                if (f.subtipo === 'numero') {
+                    const n = parseFloat(String(raw).replace(',', '.'));
+                    if (isNaN(n)) return false;
+                    if (f.min !== '' && n < parseFloat(f.min)) return false;
+                    if (f.max !== '' && n > parseFloat(f.max)) return false;
+                    return true;
+                }
+                // data: comparação lexicográfica de ISO (YYYY-MM-DD) funciona.
+                if (f.min && raw < f.min) return false;
+                if (f.max && raw > f.max) return false;
+                return true;
+            }
+            const valorLinha = normalizar(raw);
+            const alvo = normalizar(f.valor);
+            return f.tipo === 'texto'
+                ? valorLinha.indexOf(alvo) !== -1
+                : valorLinha.split(' | ').indexOf(alvo) !== -1;
+        }
+
         function linhaPassaFacetas(linha) {
             // Agrupa filtros por atributo: OR dentro do grupo, AND entre grupos.
             const grupos = {};
@@ -143,22 +215,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 (grupos[f.attr] = grupos[f.attr] || []).push(f);
             });
             return Object.keys(grupos).every(function (attr) {
-                const valorLinha = (linha.dataset[attr] || '').toLowerCase();
-                return grupos[attr].some(function (f) {
-                    const alvo = f.valor.toLowerCase();
-                    return f.tipo === 'texto'
-                        ? valorLinha.indexOf(alvo) !== -1
-                        : valorLinha.split(' | ').indexOf(alvo) !== -1;
-                });
+                return grupos[attr].some(function (f) { return itemCasa(f, linha); });
             });
         }
 
         function aplicar() {
-            const termo = busca.value.trim().toLowerCase();
+            const termo = normalizar(busca.value.trim());
             let visiveis = 0;
             linhas.forEach(function (linha) {
-                const alvoBusca = [linha.dataset.titulo, linha.dataset.lider, linha.dataset.tipo]
-                    .join(' ');
+                const alvoBusca = normalizar(
+                    [linha.dataset.titulo, linha.dataset.lider, linha.dataset.tipo].join(' ')
+                );
                 const passaBusca = !termo || alvoBusca.indexOf(termo) !== -1;
                 const passaFacetas = linhaPassaFacetas(linha);
                 const mostrar = passaBusca && passaFacetas;
@@ -175,22 +242,82 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // --- Autocomplete da busca ---------------------------------------
+        const poolSugestoes = (function () {
+            const set = new Set();
+            linhas.forEach(function (l) {
+                [l.dataset.titulo, l.dataset.lider, l.dataset.tipo].forEach(function (v) {
+                    v = (v || '').trim();
+                    if (v) set.add(v);
+                });
+            });
+            return Array.from(set);
+        })();
+        let sugestaoAtiva = -1;
+
+        function fecharSugestoes() {
+            if (!sugestoesBox) return;
+            sugestoesBox.hidden = true;
+            sugestoesBox.innerHTML = '';
+            sugestaoAtiva = -1;
+        }
+
+        function mostrarSugestoes() {
+            if (!sugestoesBox) return;
+            const termo = normalizar(busca.value.trim());
+            if (!termo) { fecharSugestoes(); return; }
+            const casam = poolSugestoes
+                .filter(function (v) { return normalizar(v).indexOf(termo) !== -1; })
+                .slice(0, 8);
+            if (!casam.length) { fecharSugestoes(); return; }
+            sugestoesBox.innerHTML = '';
+            casam.forEach(function (v) {
+                const li = document.createElement('li');
+                li.className = 'busca-sugestao';
+                li.textContent = v;
+                // mousedown (antes do blur do input) evita fechar antes do clique.
+                li.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    busca.value = v;
+                    fecharSugestoes();
+                    aplicar();
+                });
+                sugestoesBox.appendChild(li);
+            });
+            sugestoesBox.hidden = false;
+            sugestaoAtiva = -1;
+        }
+
+        // --- Eventos ------------------------------------------------------
         btnAbrir.addEventListener('click', function (event) {
             event.stopPropagation();
             painel.hidden = !painel.hidden;
             if (!painel.hidden) atualizarEntradaValor();
         });
-        // Cliques dentro do painel não fecham (não chegam ao document).
-        painel.addEventListener('click', function (event) {
-            event.stopPropagation();
-        });
+        painel.addEventListener('click', function (event) { event.stopPropagation(); });
         selCampo.addEventListener('change', atualizarEntradaValor);
+
         btnAplicar.addEventListener('click', function () {
             const cfg = CAMPOS[selCampo.value];
+            if (cfg.tipo === 'range') {
+                const min = rangeMin.value.trim();
+                const max = rangeMax.value.trim();
+                if (!min && !max) return;
+                ativos.push({
+                    campo: selCampo.value, attr: cfg.attr, tipo: 'range',
+                    subtipo: cfg.subtipo, min: min, max: max,
+                    valor: rotuloRange(cfg, min, max), label: cfg.label,
+                });
+                renderChips();
+                aplicar();
+                painel.hidden = true;
+                return;
+            }
             const valor = (cfg.tipo === 'texto' ? inputValor.value : selValor.value).trim();
             if (!valor) return;
             const jaExiste = ativos.some(function (f) {
-                return f.attr === cfg.attr && f.valor.toLowerCase() === valor.toLowerCase();
+                return f.attr === cfg.attr && f.tipo !== 'range'
+                    && normalizar(f.valor) === normalizar(valor);
             });
             if (!jaExiste) {
                 ativos.push({ campo: selCampo.value, attr: cfg.attr, valor: valor, label: cfg.label, tipo: cfg.tipo });
@@ -199,13 +326,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             painel.hidden = true;
         });
-        busca.addEventListener('input', aplicar);
 
-        // Fecha o painel ao clicar em qualquer lugar fora dele.
+        busca.addEventListener('input', function () { aplicar(); mostrarSugestoes(); });
+        busca.addEventListener('focus', mostrarSugestoes);
+        busca.addEventListener('blur', function () { setTimeout(fecharSugestoes, 120); });
+        busca.addEventListener('keydown', function (event) {
+            if (sugestoesBox.hidden) return;
+            const itens = Array.from(sugestoesBox.querySelectorAll('.busca-sugestao'));
+            if (!itens.length) return;
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                sugestaoAtiva = (sugestaoAtiva + 1) % itens.length;
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                sugestaoAtiva = (sugestaoAtiva - 1 + itens.length) % itens.length;
+            } else if (event.key === 'Enter' && sugestaoAtiva >= 0) {
+                event.preventDefault();
+                busca.value = itens[sugestaoAtiva].textContent;
+                fecharSugestoes();
+                aplicar();
+                return;
+            } else if (event.key === 'Escape') {
+                fecharSugestoes();
+                return;
+            } else {
+                return;
+            }
+            itens.forEach(function (it, i) { it.classList.toggle('ativa', i === sugestaoAtiva); });
+        });
+
+        // Fecha o painel ao clicar fora dele.
         document.addEventListener('click', function () {
             if (!painel.hidden) painel.hidden = true;
         });
-        // Fecha com a tecla Esc.
+        // Fecha painel/sugestões com Esc.
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && !painel.hidden) painel.hidden = true;
         });
@@ -213,6 +367,54 @@ document.addEventListener('DOMContentLoaded', function() {
         aplicar();
     });
 })();
+
+// ---------------------------------------------------------------------------
+// Popup de cobrança: ao clicar num ícone de alerta, abre a prévia e permite
+// enviar a cobrança (reaproveita a view enviar_cobranca_alerta).
+// ---------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('modal-cobranca');
+    if (!modal) return;
+    const form = document.getElementById('form-cobranca');
+    const semPermissao = document.getElementById('cobranca-sem-permissao');
+
+    function abrir(botao) {
+        document.getElementById('cobranca-tipo').textContent = botao.dataset.tipo || 'Cobrança';
+        document.getElementById('cobranca-titulo').textContent = botao.dataset.titulo || '';
+        document.getElementById('cobranca-destinatario').textContent =
+            botao.dataset.destinatario || '(pesquisador sem e-mail cadastrado)';
+        document.getElementById('cobranca-assunto').value = botao.dataset.assunto || '';
+        document.getElementById('cobranca-mensagem').value = botao.dataset.mensagem || '';
+
+        const action = botao.dataset.action || '';
+        if (action) {
+            form.action = action;
+            form.style.display = '';
+            if (semPermissao) semPermissao.style.display = 'none';
+        } else {
+            // Sem permissão de envio: mostra só a prévia.
+            form.style.display = 'none';
+            if (semPermissao) semPermissao.style.display = '';
+        }
+
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function fechar() {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    document.querySelectorAll('.btn-cobranca').forEach(function (botao) {
+        botao.addEventListener('click', function () { abrir(botao); });
+    });
+
+    const fecharBtn = document.getElementById('fechar-cobranca');
+    const cancelar = document.getElementById('cancelar-cobranca');
+    if (fecharBtn) fecharBtn.addEventListener('click', fechar);
+    if (cancelar) cancelar.addEventListener('click', fechar);
+});
 
 // Fechar modal ao clicar fora dele
 window.onclick = function(event) {

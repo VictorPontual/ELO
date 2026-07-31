@@ -9,7 +9,8 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django import forms
-from .models import Pesquisador, RegistroAcao
+from .models import Pesquisador, RegistroAcao, AcessoPagina
+from . import acesso
 
 # Create your views here.
 
@@ -311,4 +312,56 @@ def registro_acoes(request):
         'registros': registros,
         'usuarios': usuarios,
         'usuario_filtro': usuario,
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def gerenciar_acessos(request):
+    """Página do superadmin para definir o acesso (ver/editar) de cada conta a
+    cada página. Contas administrativas comuns (is_staff) aparecem aqui; o
+    superusuário sempre tem acesso total e por isso não é listado."""
+    usuarios = list(
+        User.objects.filter(is_staff=True, is_superuser=False)
+        .order_by('first_name', 'username')
+    )
+
+    if request.method == 'POST':
+        niveis_validos = {n for n, _ in acesso.NIVEIS}
+        for user in usuarios:
+            for area, _ in acesso.AREAS:
+                valor = request.POST.get(f'nivel_{user.id}_{area}', acesso.NIVEL_NENHUM)
+                if valor not in niveis_validos:
+                    valor = acesso.NIVEL_NENHUM
+                # Área de leitura não aceita "editar".
+                if area in acesso.AREAS_SOMENTE_LEITURA and valor == acesso.NIVEL_EDITAR:
+                    valor = acesso.NIVEL_VER
+                if valor == acesso.NIVEL_NENHUM:
+                    AcessoPagina.objects.filter(user=user, area=area).delete()
+                else:
+                    AcessoPagina.objects.update_or_create(
+                        user=user, area=area, defaults={'nivel': valor}
+                    )
+        messages.success(request, 'Acessos atualizados com sucesso.')
+        return redirect('gerenciar_acessos')
+
+    # Monta a matriz usuário x área para o template.
+    registros = AcessoPagina.objects.filter(user__in=usuarios)
+    mapa = {(r.user_id, r.area): r.nivel for r in registros}
+    linhas = []
+    for user in usuarios:
+        celulas = []
+        for area, area_label in acesso.AREAS:
+            celulas.append({
+                'area': area,
+                'label': area_label,
+                'nivel': mapa.get((user.id, area), acesso.NIVEL_NENHUM),
+                'somente_leitura': area in acesso.AREAS_SOMENTE_LEITURA,
+            })
+        linhas.append({'usuario': user, 'celulas': celulas})
+
+    return render(request, 'contas/gerenciar_acessos.html', {
+        'linhas': linhas,
+        'areas': acesso.AREAS,
+        'niveis': acesso.NIVEIS,
     })

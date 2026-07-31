@@ -1336,9 +1336,31 @@ def lista_projetos(request):
         setattr(projeto, 'lider_principal', _obter_nome_principal(projeto))
 
     from .alertas import calcular_alertas
-    alertas = calcular_alertas(projetos)
+    from .notificacoes import montar_cobranca_email
+    from .models import ConfiguracaoAlertas
+    config_alertas = ConfiguracaoAlertas.carregar()
+    alertas = calcular_alertas(projetos, config=config_alertas)
     alertas_cep = [a for a in alertas if a['tipo'] == 'cep']
     alertas_relatorio = [a for a in alertas if a['tipo'] == 'relatorio']
+
+    # Anexa a cada projeto os alertas que possui (dict com descricao/prazo/atraso
+    # ou None), para a coluna "Alerta" e o popup de cobrança. calcular_alertas
+    # referencia os mesmos objetos da lista projetos.
+    for projeto in projetos:
+        projeto.alerta_cep = None
+        projeto.alerta_relatorio = None
+    for a in alertas:
+        # Monta a prévia editável do e-mail (assunto/mensagem/destinatário).
+        pesquisador, assunto, mensagem = montar_cobranca_email(
+            a['projeto'], a['tipo'], config=config_alertas
+        )
+        a['assunto'] = assunto
+        a['mensagem'] = mensagem
+        a['destinatario'] = (pesquisador.user.email or '').strip() if pesquisador else ''
+        if a['tipo'] == 'cep':
+            a['projeto'].alerta_cep = a
+        elif a['tipo'] == 'relatorio':
+            a['projeto'].alerta_relatorio = a
 
     return render(request, 'projetos/lista_projetos.html', {
         'projetos': projetos,
@@ -1455,7 +1477,13 @@ def enviar_cobranca_alerta(request, projeto_id, tipo):
         return redirect('lista_projetos')
 
     from .notificacoes import enviar_cobranca_email
-    sucesso, detalhe = enviar_cobranca_email(projeto, tipo)
+    # Assunto/mensagem podem vir editados pelo usuário no popup; se vazios,
+    # a função usa o texto padrão da configuração.
+    assunto = (request.POST.get('assunto') or '').strip()
+    mensagem = (request.POST.get('mensagem') or '').strip()
+    sucesso, detalhe = enviar_cobranca_email(
+        projeto, tipo, assunto=assunto or None, mensagem=mensagem or None
+    )
     if sucesso:
         messages.success(request, f'Cobrança enviada por e-mail. {detalhe}')
     else:
