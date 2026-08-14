@@ -2,10 +2,21 @@ services:
   web:
     build: .
     working_dir: /app/elo
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn elo.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    # Forma de lista: o Compose passa os argumentos direto, sem tentar quebrar
+    # a string em palavras (a forma "sh -c ..." em string quebra o parser de
+    # algumas versões do Compose).
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        python manage.py migrate --noinput
+        python manage.py collectstatic --noinput
+        exec gunicorn elo.wsgi:application \
+          --bind 0.0.0.0:8000 --workers 3 --timeout 120 \
+          --access-logfile - --error-logfile - \
+          --log-level "$${GUNICORN_LOG_LEVEL:-info}" \
+          --capture-output --forwarded-allow-ips '*'
     expose:
       - "8000"
     env_file:

@@ -205,11 +205,34 @@ if AUTH_LDAP_SERVER_URI:
     # Cria/atualiza o User local a cada login com os dados do diretório.
     AUTH_LDAP_ALWAYS_UPDATE_USER = True
 
+    # OPT_REFERRALS=0 é obrigatório com Active Directory: sem isso o AD devolve
+    # referrals que o python-ldap tenta seguir sem credenciais, e a busca do
+    # usuário falha silenciosamente (o login vira "credenciais inválidas").
+    AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_REFERRALS: 0}
+
     # Conexão TLS: quando o URI é ldaps:// (porta 636) o TLS já é implícito.
-    # Para ambiente de teste com certificado auto-assinado, defina
-    # LDAP_TLS_NO_VERIFY=True (NÃO use em produção).
-    if os.environ.get('LDAP_TLS_NO_VERIFY', 'False') == 'True':
-        AUTH_LDAP_CONNECTION_OPTIONS = {ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER}
+    #
+    # Caminho recomendado: LDAP_TLS_CACERT com o certificado da CA do domínio,
+    # que valida o servidor de verdade. Alternativa de emergência:
+    # LDAP_TLS_NO_VERIFY=True desliga a validação (NÃO use em produção — expõe
+    # a senha do usuário a quem conseguir se passar pelo servidor).
+    #
+    # ATENÇÃO à ordem: OPT_X_TLS_NEWCTX tem que ser SEMPRE a última opção do
+    # dict. É ela que cria o contexto TLS aplicando as opções anteriores; o
+    # django_auth_ldap percorre o dict na ordem de inserção, então sem ela no
+    # fim as opções de TLS acima são silenciosamente ignoradas e o ldaps://
+    # falha na validação do certificado (enquanto ldap:// na 389 funciona).
+    _ldap_cacert = os.environ.get('LDAP_TLS_CACERT', '').strip()
+    _ldap_no_verify = os.environ.get('LDAP_TLS_NO_VERIFY', 'False') == 'True'
+
+    if _ldap_cacert:
+        AUTH_LDAP_CONNECTION_OPTIONS[ldap.OPT_X_TLS_CACERTFILE] = _ldap_cacert
+        AUTH_LDAP_CONNECTION_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_DEMAND
+    elif _ldap_no_verify:
+        AUTH_LDAP_CONNECTION_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
+
+    if _ldap_cacert or _ldap_no_verify:
+        AUTH_LDAP_CONNECTION_OPTIONS[ldap.OPT_X_TLS_NEWCTX] = 0
 
     # Busca de grupos (opcional). Necessária para mapear staff/superuser e para
     # exigir pertencimento a um grupo. Preencha LDAP_GROUP_SEARCH_BASE para usar.
@@ -248,6 +271,23 @@ if AUTH_LDAP_SERVER_URI:
     # fallback local. Nenhuma senha de usuário fica no banco da aplicação —
     # quem valida a senha é sempre o Active Directory.
     AUTHENTICATION_BACKENDS = ['django_auth_ldap.backend.LDAPBackend']
+
+    # Sem isto o django_auth_ldap engole o motivo real da falha e o usuário só
+    # vê "credenciais inválidas". Com LDAP_DEBUG=True o log mostra bind, busca
+    # e avaliação de grupos em docker compose logs web.
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {'class': 'logging.StreamHandler'},
+        },
+        'loggers': {
+            'django_auth_ldap': {
+                'handlers': ['console'],
+                'level': 'DEBUG' if os.environ.get('LDAP_DEBUG', 'False') == 'True' else 'INFO',
+            },
+        },
+    }
 
 
 # Internationalization
