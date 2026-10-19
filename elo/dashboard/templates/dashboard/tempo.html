@@ -1,0 +1,91 @@
+{% extends "dashboard/_base.html" %}
+{% load dashboard_extras %}
+
+{% block aba_titulo %}Tempo por etapa{% endblock %}
+{% block hero_titulo %}Tempo por etapa{% endblock %}
+{% block hero_subtitulo %}Dias úteis calculados a partir dos eventos de mudança de etapa. O tempo em devolução ao pesquisador é contado à parte e não entra no prazo da etapa.{% endblock %}
+
+{% block filtros %}{% include "dashboard/_filtro_tipo.html" %}{% endblock %}
+
+{% block corpo %}
+{% if not tem_eventos %}
+<p class="nota">Nenhum evento de tramitação{% if tipo_selecionado %} para {{ tipo_selecionado }}{% endif %}.</p>
+{% endif %}
+
+<section class="kpi-grid">
+    <article class="kpi-card accent-cyan">
+        <p class="kpi-label">Tempo total, mediana</p>
+        <h3>{{ kpis.mediana_total|dias }}</h3>
+        <p class="kpi-footnote">úteis do envio ao início autorizado ({{ kpis.concluidos }} estudos)</p>
+    </article>
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Tempo líquido institucional</p>
+        <h3>{{ kpis.mediana_liquido|dias }}</h3>
+        <p class="kpi-footnote">úteis, sem pesquisador e sem CEP</p>
+    </article>
+    <article class="kpi-card accent-slate">
+        <p class="kpi-label">No CEP responsável</p>
+        <h3>{{ kpis.mediana_cep|dias }}</h3>
+        <p class="kpi-footnote">mediana em dias úteis (prazo 30)</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Retorno do pesquisador</p>
+        <h3>{{ kpis.mediana_retorno|dias }}</h3>
+        <p class="kpi-footnote">mediana após devolução</p>
+    </article>
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Etapas internas no prazo</p>
+        <h3>{{ kpis.pct_prazo_internas|pct }}</h3>
+        <p class="kpi-footnote">média das etapas da instituição</p>
+    </article>
+</section>
+
+<article class="table-card">
+    <header>
+        <h3>Mediana e P90 por etapa</h3>
+        <p>Somente etapas concluídas. Escuro: mediana · claro: P90 · traço vermelho: prazo.</p>
+    </header>
+    <div class="table-wrapper">
+        <table class="tabela-tempo">
+            <thead>
+                <tr>
+                    <th>Etapa</th>
+                    <th>Com quem fica</th>
+                    <th class="n">Prazo</th>
+                    <th class="n">Retorno previsto</th>
+                    <th class="n">Estudos</th>
+                    <th class="n">Mediana</th>
+                    <th class="n">P90</th>
+                    <th class="col-dist">Distribuição</th>
+                    <th class="n">% no prazo</th>
+                    <th class="n">Devolvidos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in linhas %}
+                <tr>
+                    <td>{{ linha.num }} {{ linha.nome }}</td>
+                    <td><span class="tag{% if linha.num == 1 or linha.num == 6 %} aviso{% endif %}">{{ linha.com_quem }}</span></td>
+                    <td class="n">{{ linha.prazo }} d</td>
+                    <td class="n">{% if linha.retorno %}{{ linha.retorno }} d{% else %}—{% endif %}</td>
+                    <td class="n">{{ linha.n }}</td>
+                    <td class="n">{{ linha.mediana|num }}</td>
+                    <td class="n">{{ linha.p90|num }}</td>
+                    <td>
+                        <div class="dist" aria-hidden="true">
+                            {% if linha.n %}
+                            <i class="dist-p90" style="width: {% widthratio linha.p90 escala 100 %}%"></i>
+                            <i class="dist-med" style="width: {% widthratio linha.mediana escala 100 %}%"></i>
+                            {% endif %}
+                            <i class="dist-prazo" style="left: {% widthratio linha.prazo escala 100 %}%"></i>
+                        </div>
+                    </td>
+                    <td class="n{% if linha.pct_prazo is not None and linha.pct_prazo < 70 %} ruim{% endif %}">{{ linha.pct_prazo|pct }}</td>
+                    <td class="n">{% if linha.num == 1 %}não se aplica{% else %}{{ linha.pct_devolvidos|pct }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

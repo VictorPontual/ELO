@@ -97,7 +97,7 @@ body {
 
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 0.9rem;
 }
 
@@ -129,6 +129,11 @@ body {
     font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.kpi-grid-moeda h3 {
+    font-size: clamp(1.1rem, 1.6vw, 1.45rem);
+    white-space: nowrap;
+}
+
 .kpi-label {
     margin: 0;
     font-size: 0.84rem;
@@ -149,25 +154,7 @@ body {
 .accent-orange { color: var(--db-orange); }
 .accent-slate { color: var(--db-slate); }
 
-.chart-grid {
-    display: grid;
-    gap: 0.9rem;
-}
-
-.chart-grid-main {
-    grid-template-columns: 1.4fr 1fr;
-}
-
-.chart-grid-secondary {
-    grid-template-columns: 1fr 1fr;
-}
-
-.chart-grid-boolean {
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
-}
-
 .chart-card,
-.mini-card,
 .table-card {
     background: var(--db-card);
     border: 1px solid var(--db-border);
@@ -176,15 +163,13 @@ body {
     box-shadow: var(--db-shadow);
 }
 
-.chart-card,
-.mini-card {
+.chart-card {
     overflow: hidden;
 }
 
 /* Evita que o estilo global de header (base.css) afete os cards do dashboard */
 .dashboard-page .chart-card header,
-.dashboard-page .table-card header,
-.dashboard-page .mini-card header {
+.dashboard-page .table-card header {
     background: transparent;
     color: inherit;
     padding: 0;
@@ -198,7 +183,6 @@ body {
 }
 
 .chart-card h3,
-.mini-card h3,
 .table-card h3 {
     margin: 0;
     font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -213,19 +197,6 @@ body {
     font-size: 0.9rem;
 }
 
-.chart-card canvas {
-    display: block;
-    width: 100% !important;
-    height: 280px !important;
-    min-height: 280px;
-}
-
-.mini-card canvas {
-    display: block;
-    width: 100% !important;
-    height: 220px !important;
-    min-height: 220px;
-}
 
 .table-wrapper {
     overflow-x: auto;
@@ -257,14 +228,267 @@ body {
     background: #f5fbfd;
 }
 
-@media (max-width: 1080px) {
-    .kpi-grid {
-        grid-template-columns: repeat(2, minmax(150px, 1fr));
-    }
+/* --- Abas dos dashboards --- */
+.dash-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--db-border);
+    padding-bottom: 0.4rem;
+}
 
-    .chart-grid-main,
-    .chart-grid-secondary {
-        grid-template-columns: 1fr;
+.dash-tabs a {
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    color: var(--db-slate);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.dash-tabs a:hover {
+    background: #eef3fb;
+}
+
+.dash-tabs a[aria-current="page"] {
+    background: var(--db-cyan);
+    color: #ffffff;
+}
+
+/* --- Grades de cards --- */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    align-items: start;
+}
+
+.card-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-page .chart-card header.card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.grafico {
+    position: relative;
+    height: 220px;
+    margin-top: 0.6rem;
+}
+
+.grafico-alto {
+    height: 300px;
+}
+
+.chart-card p.rodape,
+.chart-card p.vazio,
+p.vazio {
+    margin-top: 0.6rem;
+    font-size: 0.88rem;
+    color: var(--db-muted);
+}
+
+.nota {
+    background: #fff8ec;
+    border: 1px solid #f0dcbc;
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9rem;
+    color: #6b4a1a;
+}
+
+/* --- Seletor Trimestre/Bimestre --- */
+.seg-toggle {
+    display: inline-flex;
+    border: 1px solid #ccd1d9;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.seg-btn {
+    border: none;
+    border-radius: 0;
+    background: #ffffff;
+    color: var(--db-slate);
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.seg-btn + .seg-btn {
+    border-left: 1px solid #e2e6eb;
+}
+
+.seg-btn:hover {
+    background: #eef3fb;
+}
+
+.seg-btn[aria-pressed="true"] {
+    background: var(--db-cyan);
+    color: #ffffff;
+}
+
+/* --- Pares sim/não --- */
+.par-barra {
+    display: flex;
+    height: 14px;
+    margin: 0.9rem 0 0.6rem;
+    border-radius: 7px;
+    overflow: hidden;
+    background: #d7e2ea;
+}
+
+.par-barra .par-sim {
+    background: var(--db-cyan);
+}
+
+.par-legenda {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.88rem;
+    color: var(--db-muted);
+}
+
+.par-legenda b {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+}
+
+.par-legenda b.par-sim { background: var(--db-cyan); }
+.par-legenda b.par-nao { background: #d7e2ea; }
+
+/* --- Lista chave/valor --- */
+.kv {
+    margin: 0.6rem 0 0;
+}
+
+.kv div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #ebf1f7;
+    font-size: 0.92rem;
+}
+
+.kv dt {
+    color: var(--db-muted);
+}
+
+.kv dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* --- Tabelas, etiquetas e filtros --- */
+.table-card th.n,
+.table-card td.n {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.table-card .col-codigo {
+    width: 9.5rem;
+}
+
+.table-card td.codigo {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.85rem;
+}
+
+.mute {
+    color: var(--db-muted);
+    font-size: 0.85rem;
+}
+
+.ruim {
+    color: #a52a2a;
+}
+
+.tag {
+    display: inline-block;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: #e3f2ef;
+    color: #0f5c4d;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.tag.aviso { background: #f6e3cf; color: #8a4508; }
+.tag.ruim { background: #f6d9d9; color: #a52a2a; }
+.tag.ok { background: #e3f2ef; color: #0f5c4d; }
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chip {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--db-border);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--db-slate);
+    text-decoration: none;
+    font-size: 0.88rem;
+}
+
+.chip[aria-current="true"] {
+    background: var(--db-cyan);
+    border-color: var(--db-cyan);
+    color: #ffffff;
+}
+
+/* --- Tempo por etapa: barra de distribuição --- */
+.tabela-tempo {
+    table-layout: auto !important;
+}
+
+.tabela-tempo .col-dist {
+    min-width: 160px;
+}
+
+.dist {
+    position: relative;
+    height: 14px;
+    background: #ebf1f7;
+    border-radius: 3px;
+}
+
+.dist i {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 3px;
+}
+
+.dist .dist-p90 { background: rgba(0, 163, 163, 0.3); }
+.dist .dist-med { background: var(--db-cyan); }
+
+.dist .dist-prazo {
+    top: -2px;
+    height: 18px;
+    width: 2px;
+    background: #a52a2a;
+    border-radius: 0;
+}
+
+@media (max-width: 1080px) {
+    .card-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -278,11 +502,8 @@ body {
         width: 100%;
     }
 
-    .chart-grid-boolean {
-        grid-template-columns: 1fr;
-    }
-
-    .kpi-grid {
+    .card-grid,
+    .card-grid-3 {
         grid-template-columns: 1fr;
     }
 }

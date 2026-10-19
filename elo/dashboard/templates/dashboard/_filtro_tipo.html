@@ -1,0 +1,9 @@
+<form method="get" class="dashboard-filter">
+    <label for="tipo">Tipo de estudo</label>
+    <select name="tipo" id="tipo" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        {% for tipo in tipos %}
+            <option value="{{ tipo }}"{% if tipo == tipo_selecionado %} selected{% endif %}>{{ tipo }}</option>
+        {% endfor %}
+    </select>
+</form>

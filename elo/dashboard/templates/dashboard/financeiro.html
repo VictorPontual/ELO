@@ -1,0 +1,90 @@
+{% extends "dashboard/_base.html" %}
+{% load dashboard_extras %}
+
+{% block aba_titulo %}Financeiro{% endblock %}
+{% block hero_titulo %}Financeiro{% endblock %}
+{% block hero_subtitulo %}Calculado a partir do orçamento detalhado de cada estudo. Soma apenas estudos com orçamento informado ({{ kpis.com_orcamento }} de {{ kpis.total_estudos }}).{% endblock %}
+
+{% block filtros %}{% include "dashboard/_filtro_tipo.html" %}{% endblock %}
+
+{% block corpo %}
+<section class="kpi-grid kpi-grid-moeda">
+    <article class="kpi-card accent-cyan">
+        <p class="kpi-label">Orçamento total</p>
+        <h3>{{ kpis.total|brl }}</h3>
+        <p class="kpi-footnote">{{ kpis.com_orcamento }} de {{ kpis.total_estudos }} estudos com orçamento</p>
+    </article>
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Recursos externos</p>
+        <h3>{{ kpis.externos|brl }}</h3>
+        <p class="kpi-footnote">fomento e patrocínio</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Custo para o HU</p>
+        <h3>{{ kpis.custo_hu|brl }}</h3>
+        <p class="kpi-footnote">contrapartida</p>
+    </article>
+    <article class="kpi-card accent-slate">
+        <p class="kpi-label">Ressarcimento ao HU</p>
+        <h3>{{ kpis.ressarcimento|brl }}</h3>
+        <p class="kpi-footnote">previsto</p>
+    </article>
+    <article class="kpi-card accent-slate">
+        <p class="kpi-label">Saldo do HU</p>
+        <h3{% if kpis.saldo_hu < 0 %} class="ruim"{% endif %}>{{ kpis.saldo_hu|brl }}</h3>
+        <p class="kpi-footnote">ressarcimento menos custo</p>
+    </article>
+    <article class="kpi-card accent-cyan">
+        <p class="kpi-label">Mediana por estudo</p>
+        <h3>{{ kpis.mediana_estudo|brl }}</h3>
+        <p class="kpi-footnote">orçamento total do estudo</p>
+    </article>
+</section>
+
+<section class="card-grid card-grid-3">
+    <article class="chart-card">
+        <h3>Orçamento por fonte</h3>
+        <div class="grafico"><canvas data-serie="fonte" data-formato="brl"></canvas></div>
+    </article>
+    <article class="chart-card">
+        <h3>Orçamento por rubrica</h3>
+        <div class="grafico"><canvas data-serie="rubrica" data-formato="brl"></canvas></div>
+    </article>
+    <article class="chart-card">
+        <h3>Orçamento por tipo de estudo</h3>
+        <div class="grafico"><canvas data-serie="tipo" data-formato="brl"></canvas></div>
+    </article>
+</section>
+
+<article class="table-card">
+    <header><h3>Estudos com maior orçamento</h3></header>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-codigo">Código</th>
+                    <th>Estudo</th>
+                    <th>Tipo</th>
+                    <th class="n">Total</th>
+                    <th class="n">Custo para o HU</th>
+                    <th class="n">Ressarcimento ao HU</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudo in maiores %}
+                <tr>
+                    <td class="codigo">{{ estudo.codigo }}</td>
+                    <td>{{ estudo.titulo }}</td>
+                    <td>{{ estudo.tipo }}</td>
+                    <td class="n">{{ estudo.total|brl }}</td>
+                    <td class="n">{{ estudo.custo_hu|brl }}</td>
+                    <td class="n">{{ estudo.ressarcimento|brl }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="mute">Nenhum orçamento detalhado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

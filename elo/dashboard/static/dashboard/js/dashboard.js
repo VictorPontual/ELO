@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const dataElement = document.getElementById('dashboard-charts-data');
-    if (!dataElement) {
+    if (!dataElement || typeof Chart === 'undefined') {
         return;
     }
 
@@ -8,161 +8,138 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const palette = {
         cyan: '#00a3a3',
-        cyanSoft: 'rgba(0, 163, 163, 0.34)',
-        green: '#2e9f70',
-        greenSoft: 'rgba(46, 159, 112, 0.55)',
+        cyanSoft: 'rgba(0, 163, 163, 0.55)',
         orange: '#d78124',
-        orangeSoft: 'rgba(215, 129, 36, 0.58)',
-        slate: '#4f647d',
-        slateSoft: 'rgba(79, 100, 125, 0.6)',
+        grid: 'rgba(88, 97, 116, 0.15)',
     };
 
-    const eixoBase = {
-        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(88, 97, 116, 0.15)' } },
-        x: { grid: { display: false } },
+    const formatos = {
+        num: function (v) { return Number(v).toLocaleString('pt-BR'); },
+        pct: function (v) { return v + '%'; },
+        brl: function (v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); },
     };
 
-    // --- Builders (retornam a instância para permitir destroy/recriação) ---
-    function barChart(element, labels, values, color, horizontal) {
-        return new Chart(element, {
-            type: 'bar',
-            data: { labels: labels, datasets: [{ data: values, backgroundColor: color, borderRadius: 8, maxBarThickness: 38 }] },
-            options: {
-                indexAxis: horizontal ? 'y' : 'x',
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: eixoBase,
-            },
-        });
+    // Rótulos curtos para o eixo (o tooltip mantém o valor completo).
+    const formatosEixo = {
+        brl: function (v) {
+            if (Math.abs(v) >= 1e6) return 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi';
+            if (Math.abs(v) >= 1e3) return 'R$ ' + (v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + ' mil';
+            return 'R$ ' + v;
+        },
+    };
+
+    function encurtar(texto, max) {
+        texto = String(texto);
+        return texto.length > max ? texto.slice(0, max - 1) + '…' : texto;
     }
 
-    function lineChart(element, labels, values) {
-        return new Chart(element, {
-            type: 'line',
+    function mostrarVazio(canvas) {
+        const aviso = document.createElement('p');
+        aviso.className = 'vazio';
+        aviso.textContent = 'Sem dados para exibir.';
+        canvas.parentElement.replaceWith(aviso);
+    }
+
+    // --- Barras horizontais: <canvas data-serie="chave" data-formato="num|pct|brl"> ---
+    function barrasHorizontais(canvas, serie, fmt, fmtEixo) {
+        // Altura proporcional ao número de categorias.
+        canvas.parentElement.style.height = Math.max(120, serie.labels.length * 30 + 40) + 'px';
+        // Rótulos ocupam no máximo ~metade da largura do card.
+        const maxRotulo = Math.max(14, Math.round(canvas.parentElement.clientWidth / 14));
+        return new Chart(canvas, {
+            type: 'bar',
             data: {
-                labels: labels,
+                labels: serie.labels,
                 datasets: [{
-                    label: 'Aprovados', data: values,
-                    borderColor: palette.cyan, backgroundColor: palette.cyanSoft,
-                    fill: true, tension: 0.32, pointRadius: 4, pointHoverRadius: 6,
+                    data: serie.values,
+                    backgroundColor: palette.cyanSoft,
+                    borderRadius: 6,
+                    maxBarThickness: 22,
                 }],
             },
             options: {
+                indexAxis: 'y',
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: eixoBase,
-            },
-        });
-    }
-
-    function doughnutChart(element, labels, values, colors) {
-        return new Chart(element, {
-            type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
-            options: {
-                maintainAspectRatio: false,
-                cutout: '62%',
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxHeight: 8, boxWidth: 8 } } },
-            },
-        });
-    }
-
-    // --- Painel A: aprovações ao longo do tempo (Ano / Trimestre / Bimestre) ---
-    const elTempo = document.getElementById('chartTempo');
-    let chartTempo = null;
-
-    function renderTempo(serie) {
-        const d = chartsData[serie];
-        if (!elTempo || !d) return;
-        if (chartTempo) chartTempo.destroy();
-        if (serie === 'anual') {
-            chartTempo = lineChart(elTempo, d.labels, d.values);
-        } else {
-            const cores = { trimestral: palette.greenSoft, bimestral: palette.cyanSoft, andamento: palette.slateSoft };
-            chartTempo = barChart(elTempo, d.labels, d.values, cores[serie] || palette.greenSoft, false);
-        }
-    }
-
-    const botoesSerie = Array.from(document.querySelectorAll('.seg-btn'));
-    botoesSerie.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            botoesSerie.forEach(function (b) { b.classList.remove('ativo'); });
-            btn.classList.add('ativo');
-            renderTempo(btn.dataset.serie);
-        });
-    });
-    renderTempo('anual');
-
-    // --- Painel B: distribuição dos projetos (dimensão + por trimestre) ---
-    const elDist = document.getElementById('chartDist');
-    const selDim = document.getElementById('dist-dim');
-    const distTrim = document.getElementById('dist-trim');
-    let chartDist = null;
-
-    const TRIM_LABELS = ['1o tri', '2o tri', '3o tri', '4o tri'];
-    const TRIM_CORES = [palette.cyanSoft, palette.greenSoft, palette.orangeSoft, palette.slateSoft];
-    // Cores das dimensões em rosca (booleanas + tecnológico com 3-4 fatias).
-    const ROSCA_CORES = {
-        tecnologico: ['#00a3a3', '#d78124', '#4f647d', '#d7e7ed'],
-        multicentrico: ['#2e9f70', '#dceee6'],
-        integracao: ['#d78124', '#f4e5d2'],
-        rede_hubrasil: ['#4f647d', '#e2e6eb'],
-    };
-
-    function renderDist() {
-        if (!elDist || !selDim) return;
-        const dim = selDim.value;
-        const d = (chartsData.dist || {})[dim];
-        if (!d) return;
-        if (chartDist) chartDist.destroy();
-
-        const ehSubAprov = d.tipo === 'sub_aprov';
-        // "por trimestre" não se aplica a submetidos x aprovados.
-        distTrim.disabled = ehSubAprov;
-        distTrim.parentElement.classList.toggle('desabilitado', ehSubAprov);
-        const porTrim = distTrim.checked && !ehSubAprov;
-
-        if (ehSubAprov) {
-            chartDist = new Chart(elDist, {
-                type: 'bar',
-                data: {
-                    labels: d.labels,
-                    datasets: [
-                        { label: 'Submetidos', data: d.submetidos, backgroundColor: palette.slateSoft, borderRadius: 6 },
-                        { label: 'Aprovados', data: d.aprovados, backgroundColor: palette.greenSoft, borderRadius: 6 },
-                    ],
-                },
-                options: {
-                    indexAxis: 'y', maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }, scales: eixoBase,
-                },
-            });
-        } else if (porTrim) {
-            const datasets = d.trimestres.map(function (vals, i) {
-                return { label: TRIM_LABELS[i], data: vals, backgroundColor: TRIM_CORES[i], borderRadius: 4 };
-            });
-            chartDist = new Chart(elDist, {
-                type: 'bar',
-                data: { labels: d.labels, datasets: datasets },
-                options: {
-                    indexAxis: 'y', maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(88,97,116,0.15)' } },
-                        y: { stacked: true, grid: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function (itens) { return serie.labels[itens[0].dataIndex]; },
+                            label: function (ctx) { return fmt(ctx.parsed.x); },
+                        },
                     },
                 },
-            });
-        } else if (d.tipo === 'rosca') {
-            chartDist = doughnutChart(elDist, d.labels, d.total, ROSCA_CORES[dim] || [palette.cyan, palette.green, palette.orange, palette.slate]);
-        } else {
-            chartDist = barChart(elDist, d.labels, d.total, palette.orangeSoft, true);
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0, maxRotation: 0, callback: fmtEixo || fmt }, grid: { color: palette.grid } },
+                    y: {
+                        grid: { display: false },
+                        ticks: {
+                            autoSkip: false,
+                            callback: function (valor) { return encurtar(this.getLabelForValue(valor), maxRotulo); },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    document.querySelectorAll('canvas[data-serie]').forEach(function (canvas) {
+        const serie = chartsData[canvas.dataset.serie];
+        if (!serie || !serie.labels.length) {
+            mostrarVazio(canvas);
+            return;
+        }
+        const formato = canvas.dataset.formato;
+        barrasHorizontais(canvas, serie, formatos[formato] || formatos.num, formatosEixo[formato]);
+    });
+
+    // --- Painel: aprovação institucional por período (Trimestre / Bimestre) ---
+    const canvasPeriodo = document.getElementById('chartPeriodo');
+    const periodo = chartsData.periodo;
+    if (!canvasPeriodo || !periodo) {
+        return;
+    }
+
+    const ROTULOS = {
+        t: ['1º tri', '2º tri', '3º tri', '4º tri'],
+        b: ['jan–fev', 'mar–abr', 'mai–jun', 'jul–ago', 'set–out', 'nov–dez'],
+    };
+    const ano = canvasPeriodo.dataset.ano;
+    const dadosAno = periodo.anos[ano] || { t: [0, 0, 0, 0], b: [0, 0, 0, 0, 0, 0] };
+    const totalEl = document.getElementById('periodo-total');
+    let chartPeriodo = null;
+
+    function renderPeriodo(gr) {
+        const valores = dadosAno[gr];
+        const atual = ano === periodo.atual.ano ? periodo.atual[gr] : -1;
+        const cores = valores.map(function (_, i) { return i === atual ? palette.orange : palette.cyan; });
+        if (chartPeriodo) chartPeriodo.destroy();
+        chartPeriodo = new Chart(canvasPeriodo, {
+            type: 'bar',
+            data: {
+                labels: ROTULOS[gr].map(function (r, i) { return i === atual ? r + ' (em curso)' : r; }),
+                datasets: [{ label: 'Aprovações', data: valores, backgroundColor: cores, borderRadius: 8, maxBarThickness: 64 }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: palette.grid } },
+                    x: { grid: { display: false } },
+                },
+            },
+        });
+        if (totalEl) {
+            totalEl.textContent = valores.reduce(function (a, b) { return a + b; }, 0).toLocaleString('pt-BR');
         }
     }
 
-    if (selDim) {
-        selDim.addEventListener('change', renderDist);
-        distTrim.addEventListener('change', renderDist);
-        renderDist();
-    }
+    const botoes = Array.from(document.querySelectorAll('.seg-btn[data-gr]'));
+    botoes.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            botoes.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+            renderPeriodo(btn.dataset.gr);
+        });
+    });
+    renderPeriodo('t');
 });

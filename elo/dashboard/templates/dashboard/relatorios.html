@@ -1,0 +1,84 @@
+{% extends "dashboard/_base.html" %}
+{% load dashboard_extras %}
+
+{% block aba_titulo %}Relatórios{% endblock %}
+{% block hero_titulo %}Relatórios de andamento{% endblock %}
+{% block hero_subtitulo %}Acompanhamento depois do início autorizado. Cada linha é um relatório de um estudo.{% endblock %}
+
+{% block corpo %}
+<section class="kpi-grid">
+    <article class="kpi-card accent-cyan">
+        <p class="kpi-label">A entregar</p>
+        <h3>{{ kpis.a_entregar }}</h3>
+        <p class="kpi-footnote">pendentes ou devolvidos</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Em atraso</p>
+        <h3{% if kpis.em_atraso %} class="ruim"{% endif %}>{{ kpis.em_atraso }}</h3>
+        <p class="kpi-footnote">prazo vencido</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Vencem em breve</p>
+        <h3>{{ kpis.vencem_em_breve }}</h3>
+        <p class="kpi-footnote">em até {{ kpis.janela_vencimento }} dias úteis</p>
+    </article>
+    <article class="kpi-card accent-slate">
+        <p class="kpi-label">Aguardando análise</p>
+        <h3>{{ kpis.aguardando_analise }}</h3>
+        <p class="kpi-footnote">entregues, sem parecer da UGPesq</p>
+    </article>
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Entregues no prazo</p>
+        <h3>{{ kpis.pct_no_prazo|pct }}</h3>
+        <p class="kpi-footnote">entre os já entregues</p>
+    </article>
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Tempo de análise</p>
+        <h3>{{ kpis.mediana_analise|dias }}</h3>
+        <p class="kpi-footnote">mediana em dias úteis (meta {{ kpis.meta_analise }})</p>
+    </article>
+</section>
+
+<nav class="chips" aria-label="Filtrar por situação">
+    {% for chave, rotulo in filtros %}
+        <a href="?situacao={{ chave }}" class="chip"{% if chave == filtro %} aria-current="true"{% endif %}>{{ rotulo }}</a>
+    {% endfor %}
+</nav>
+
+<article class="table-card">
+    <header>
+        <h3>Relatórios por estudo</h3>
+        <p>Atrasados primeiro, depois por prazo.</p>
+    </header>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-codigo">Código</th>
+                    <th>Título</th>
+                    <th>Coordenação</th>
+                    <th>Tipo</th>
+                    <th>Período</th>
+                    <th>Prazo</th>
+                    <th>Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in linhas %}
+                <tr>
+                    <td class="codigo">{{ linha.codigo }}</td>
+                    <td>{{ linha.titulo }}</td>
+                    <td>{{ linha.coordenacao }}</td>
+                    <td>{{ linha.tipo }}</td>
+                    <td>{{ linha.periodo }}</td>
+                    <td>{{ linha.prazo|date:"d/m/Y" }}</td>
+                    <td><span class="tag {{ linha.classe }}">{{ linha.situacao }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="mute">Nenhum relatório neste filtro.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% block aba_titulo %}Dashboard{% endblock %} - ELO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <section class="dashboard-hero">
+        <div>
+            <p class="hero-eyebrow">Gestão de pesquisa</p>
+            <h2>{% block hero_titulo %}{% endblock %}</h2>
+            <p class="hero-subtitle">{% block hero_subtitulo %}{% endblock %}</p>
+        </div>
+        {% block filtros %}{% endblock %}
+    </section>
+
+    <nav class="dash-tabs" aria-label="Dashboards">
+        <a href="{% url 'dashboard' %}"{% if aba == 'painel' %} aria-current="page"{% endif %}>Painel</a>
+        <a href="{% url 'dashboard_mais' %}"{% if aba == 'mais' %} aria-current="page"{% endif %}>Mais indicadores</a>
+        <a href="{% url 'dashboard_tempo' %}"{% if aba == 'tempo' %} aria-current="page"{% endif %}>Tempo por etapa</a>
+        <a href="{% url 'dashboard_financeiro' %}"{% if aba == 'financeiro' %} aria-current="page"{% endif %}>Financeiro</a>
+        <a href="{% url 'dashboard_relatorios' %}"{% if aba == 'relatorios' %} aria-current="page"{% endif %}>Relatórios</a>
+    </nav>
+
+    <p class="nota">Dados de exemplo: os dashboards ainda não estão ligados ao banco.</p>
+
+    {% block corpo %}{% endblock %}
+</div>
+
+{% if charts %}{{ charts|json_script:"dashboard-charts-data" }}{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if charts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static 'dashboard/js/dashboard.js' %}"></script>
+{% endif %}
+{% endblock %}

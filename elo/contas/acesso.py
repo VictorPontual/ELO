@@ -90,6 +90,10 @@ URL_AREA = {
     'editar_pesquisador': AREA_PESQUISADORES,
     # Dashboard
     'dashboard': AREA_DASHBOARD,
+    'dashboard_mais': AREA_DASHBOARD,
+    'dashboard_tempo': AREA_DASHBOARD,
+    'dashboard_financeiro': AREA_DASHBOARD,
+    'dashboard_relatorios': AREA_DASHBOARD,
     # Registro de ações (auditoria)
     'registro_acoes': AREA_REGISTRO_ACOES,
 }

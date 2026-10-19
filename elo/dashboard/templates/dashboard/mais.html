@@ -1,0 +1,85 @@
+{% extends "dashboard/_base.html" %}
+{% load dashboard_extras %}
+
+{% block aba_titulo %}Mais indicadores{% endblock %}
+{% block hero_titulo %}Mais indicadores{% endblock %}
+{% block hero_subtitulo %}Devoluções, ética, execução e equipe, a partir dos eventos de tramitação, relatórios e cadastro dos projetos.{% endblock %}
+
+{% block corpo %}
+<section class="kpi-grid">
+    <article class="kpi-card accent-green">
+        <p class="kpi-label">Primeira passagem</p>
+        <h3>{{ kpis.pct_primeira_passagem|pct }}</h3>
+        <p class="kpi-footnote">aprovados sem devolução ({{ kpis.aprovados_fluxo }} aprovados no fluxo)</p>
+    </article>
+    <article class="kpi-card accent-cyan">
+        <p class="kpi-label">Reenvios no prazo</p>
+        <h3>{{ kpis.pct_reenvio_prazo|pct }}</h3>
+        <p class="kpi-footnote">dentro da previsão de retorno</p>
+    </article>
+    <article class="kpi-card accent-slate">
+        <p class="kpi-label">Mediana até o reenvio</p>
+        <h3>{{ kpis.mediana_reenvio|dias }}</h3>
+        <p class="kpi-footnote">dias úteis do pesquisador após devolução</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Inativados</p>
+        <h3>{{ kpis.inativados }}</h3>
+        <p class="kpi-footnote">por falta de retorno</p>
+    </article>
+    <article class="kpi-card accent-orange">
+        <p class="kpi-label">Devolvidos agora</p>
+        <h3>{{ kpis.devolvidos_agora }}</h3>
+        <p class="kpi-footnote">aguardando reenvio do pesquisador</p>
+    </article>
+</section>
+
+<section class="card-grid">
+    <article class="chart-card">
+        <h3>Taxa de devolução por etapa</h3>
+        <p>% dos projetos que entraram na etapa e foram devolvidos ao menos uma vez</p>
+        <div class="grafico"><canvas data-serie="taxa_devolucao" data-formato="pct"></canvas></div>
+    </article>
+    <article class="chart-card">
+        <h3>Motivos de devolução</h3>
+        <div class="grafico"><canvas data-serie="motivos"></canvas></div>
+    </article>
+</section>
+
+<section class="card-grid">
+    <article class="chart-card">
+        <h3>Ética</h3>
+        <dl class="kv">
+            <div><dt>CEP responsável, mediana</dt><dd>{{ etica.cep_mediana|dias }} úteis (prazo {{ etica.cep_prazo }})</dd></div>
+            <div><dt>CEP, P90</dt><dd>{{ etica.cep_p90|dias }} úteis</dd></div>
+            <div><dt>CEP dentro do prazo</dt><dd>{{ etica.cep_pct_prazo|pct }}</dd></div>
+            <div><dt>Projetos com parecer do CEP</dt><dd>{{ etica.com_parecer }}</dd></div>
+            <div><dt>Parecer do CEP não se aplica</dt><dd>{{ etica.parecer_na }}</dd></div>
+        </dl>
+    </article>
+    <article class="chart-card">
+        <h3>Execução e devolução científica</h3>
+        <dl class="kv">
+            <div><dt>Relatórios entregues no prazo</dt><dd>{{ execucao.pct_no_prazo|pct }}</dd></div>
+            <div><dt>Tempo mediano de análise de relatório</dt><dd>{{ execucao.mediana_analise|dias }} úteis</dd></div>
+            <div><dt>Coleta encerrada</dt><dd>{{ execucao.coleta_vencida }} estudos</dd></div>
+            <div><dt>Coleta encerrada sem relatório entregue</dt><dd>{{ execucao.coleta_vencida_sem_relatorio }} estudos</dd></div>
+            <div><dt>Taxa de conclusão (relatório final aceito)</dt><dd>{{ execucao.pct_conclusao|pct }}</dd></div>
+        </dl>
+    </article>
+</section>
+
+<section class="card-grid">
+    <article class="chart-card">
+        <h3>Equipe por tipo de vínculo</h3>
+        <p>Participações em todos os projetos</p>
+        <div class="grafico"><canvas data-serie="vinculos"></canvas></div>
+    </article>
+    <article class="chart-card">
+        <h3>Estudos por especialidade (primeiras)</h3>
+        <div class="grafico"><canvas data-serie="especialidades"></canvas></div>
+    </article>
+</section>
+
+<p class="nota">Ainda sem campo no cadastro, por isso fora deste painel: dispensa de TCLE, TRL, propriedade intelectual, extensões de prazo, produtos esperados e gerados, níveis acadêmicos e indicadores de acesso e dados.</p>
+{% endblock %}
