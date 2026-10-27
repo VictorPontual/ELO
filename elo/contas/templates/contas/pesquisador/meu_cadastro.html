@@ -1,0 +1,63 @@
+{% extends "contas/pesquisador/_base.html" %}
+
+{% block aba_titulo %}Meu cadastro{% endblock %}
+{% block hero_titulo %}Meu cadastro{% endblock %}
+{% block hero_subtitulo %}Identificação do pesquisador, confirmada pela UGPesq antes do cadastro de projetos.{% endblock %}
+
+{% block corpo %}
+<p class="nota-info">
+    <b>Etapa 0: cadastro do pesquisador.</b> Feito uma vez, no primeiro acesso, com o login
+    institucional. A UGPesq confirma vínculo e identificação em até 2 dias úteis; só então o
+    pesquisador pode cadastrar projetos.
+</p>
+
+<article class="table-card">
+    <header>
+        <h3>Meu cadastro <span class="tag aviso">{{ cadastro.situacao }}</span></h3>
+    </header>
+    <form class="form-pesquisador" onsubmit="return false">
+        <div class="form-grid">
+            <div class="campo">
+                <label for="cad-nome">Nome completo</label>
+                <input type="text" id="cad-nome" value="{{ cadastro.nome }}">
+            </div>
+            <div class="campo">
+                <label for="cad-email">E-mail institucional (vem do login)</label>
+                <input type="email" id="cad-email" value="{{ cadastro.email }}" readonly>
+            </div>
+            <div class="campo">
+                <label for="cad-vinculo">Tipo de vínculo</label>
+                <select id="cad-vinculo">
+                    {% for vinculo in vinculos %}
+                    <option{% if vinculo == cadastro.vinculo %} selected{% endif %}>{{ vinculo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="campo">
+                <label for="cad-instituicao">Instituição</label>
+                <input type="text" id="cad-instituicao" value="{{ cadastro.instituicao }}">
+            </div>
+            <div class="campo">
+                <label for="cad-area">Área de atuação</label>
+                <input type="text" id="cad-area" value="{{ cadastro.area }}">
+            </div>
+            <div class="campo">
+                <label for="cad-lattes">Currículo Lattes (link)</label>
+                <input type="url" id="cad-lattes" value="{{ cadastro.lattes }}">
+            </div>
+            <div class="campo">
+                <label for="cad-orcid">ORCID</label>
+                <input type="text" id="cad-orcid" value="{{ cadastro.orcid }}" placeholder="0000-0000-0000-0000">
+            </div>
+            <div class="campo">
+                <label for="cad-telefone">Telefone</label>
+                <input type="text" id="cad-telefone" value="{{ cadastro.telefone }}">
+            </div>
+        </div>
+        <label class="check"><input type="checkbox"> Li e aceito o termo de uso e o aviso de privacidade (LGPD)</label>
+        <div class="acoes">
+            <button type="button" class="btn-primario">Enviar cadastro</button>
+        </div>
+    </form>
+</article>
+{% endblock %}

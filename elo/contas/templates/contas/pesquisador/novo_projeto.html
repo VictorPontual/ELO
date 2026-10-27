@@ -1,0 +1,390 @@
+{% extends "contas/pesquisador/_base.html" %}
+{% load dashboard_extras %}
+
+{% block aba_titulo %}Novo projeto{% endblock %}
+{% block hero_titulo %}Novo projeto{% endblock %}
+{% block hero_subtitulo %}Cadastro do projeto em 10 seções. Os campos e documentos mudam conforme o tipo de estudo.{% endblock %}
+
+{% block corpo %}
+<p class="nota-info">
+    Substitui o cadastro "Novo Projeto" do Rede Pesquisa. Os campos mudam conforme o tipo de
+    estudo; o sistema só pede os documentos que o tipo exige. O coordenador pode delegar cada
+    seção a um membro da equipe. Pesquisadores com cadastro não confirmado não chegam a esta tela.
+</p>
+
+<p class="nota-info">
+    <b>Delegar o preenchimento.</b> O coordenador atribui cada seção a um membro da equipe. Cada
+    pessoa edita só o que recebeu e marca como concluída. Só o coordenador envia o estudo, quando
+    tudo estiver concluído.
+</p>
+
+<article class="table-card delegacao">
+    <header>
+        <h3>Quem preenche cada parte</h3>
+    </header>
+    <form method="get" class="form-pesquisador">
+        <div class="campo campo-como">
+            <label for="del-como">Você está preenchendo como</label>
+            <select id="del-como" name="como" onchange="this.form.submit()">
+                {% for membro in equipe %}
+                <option value="{{ forloop.counter0 }}"{% if forloop.counter0 == indice_como %} selected{% endif %}>{{ membro.nome }} ({{ membro.acesso|lower }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <noscript><button type="submit" class="btn-secundario">Trocar</button></noscript>
+    </form>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Seção</th>
+                    <th>Responsável</th>
+                    <th class="col-situacao-secao">Situação</th>
+                    <th class="col-visao">Para quem está vendo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in delegacao %}
+                <tr>
+                    <td>{{ linha.numero }}. {{ linha.titulo }}</td>
+                    <td class="campo">
+                        <select aria-label="Responsável pela seção {{ linha.titulo }}"{% if not eh_coordenador %} disabled{% endif %}>
+                            {% for nome in responsaveis %}
+                            <option{% if nome == linha.responsavel %} selected{% endif %}>{{ nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><span class="tag {{ linha.classe }}">{{ linha.situacao }}</span></td>
+                    <td>{% if linha.editavel %}<b class="voce-edita">você edita</b>{% else %}<span class="mute">modo leitura</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="mute">
+        {% if eh_coordenador %}Como coordenador, você atribui as seções aos membros com acesso de preenchedor.
+        {% else %}Só o coordenador muda os responsáveis. Leitores veem o cadastro, mas não recebem seção.{% endif %}
+    </p>
+</article>
+
+<article class="table-card progresso">
+    <div class="progresso-topo">
+        <b>Preenchimento: {{ preenchimento }}%</b>
+        <span class="mute">{{ pendencias }} pendências para poder enviar</span>
+    </div>
+    <div class="progresso-barra"><i style="width: {{ preenchimento }}%"></i></div>
+    <nav class="secoes" aria-label="Seções do formulário">
+        {% for numero, titulo, pend in secoes %}
+        <a href="#secao-{{ numero }}" class="secao-chip">
+            {{ numero }}. {{ titulo }}
+            {% if pend %}<span class="pend">{{ pend }}</span>{% else %}<span aria-label="completa">✓</span>{% endif %}
+        </a>
+        {% endfor %}
+    </nav>
+    <p class="mute">Ao tentar enviar com pendência, o envio é bloqueado e as seções com pendência ficam destacadas.</p>
+</article>
+
+<form class="form-pesquisador form-novo" onsubmit="return false">
+    <article class="table-card{% if not secao.s1.editavel %} modo-leitura{% endif %}" id="secao-1">
+        <header><h3>1. Identificação {% include "contas/pesquisador/_secao_tag.html" with s=secao.s1 %}</h3></header>
+        <fieldset class="secao-campos"{% if not secao.s1.editavel %} disabled{% endif %}>
+        <div class="form-grid">
+            <div class="campo campo-largo">
+                <label for="np-titulo">Título do projeto</label>
+                <input type="text" id="np-titulo" value="{{ identificacao.titulo }}">
+            </div>
+            <div class="campo">
+                <label for="np-apelido">Apelido do estudo</label>
+                <input type="text" id="np-apelido" value="{{ identificacao.apelido }}">
+            </div>
+            <div class="campo">
+                <label for="np-hospital">Hospital</label>
+                <select id="np-hospital">
+                    {% for hospital in hospitais %}
+                    <option{% if hospital == identificacao.hospital %} selected{% endif %}>{{ hospital }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="campo">
+                <label for="np-tipo">Tipo de estudo</label>
+                <select id="np-tipo">
+                    {% for tipo in tipos_estudo %}
+                    <option{% if tipo == identificacao.tipo %} selected{% endif %}>{{ tipo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="campo">
+                <label for="np-palavras">Palavras-chave (ao menos 3)</label>
+                <input type="text" id="np-palavras" value="{{ identificacao.palavras_chave }}">
+            </div>
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s1 %}
+    </article>
+
+    <article class="table-card{% if not secao.s2.editavel %} modo-leitura{% endif %}" id="secao-2">
+        <header><h3>2. Classificação e desenho do estudo <span class="mute">(campos do tipo {{ identificacao.tipo }})</span> {% include "contas/pesquisador/_secao_tag.html" with s=secao.s2 %}</h3></header>
+        <fieldset class="secao-campos"{% if not secao.s2.editavel %} disabled{% endif %}>
+        <div class="checks">
+            {% for rotulo, marcado in classificacao %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        <div class="form-grid form-grid-4">
+            <div class="campo">
+                <label for="np-tcle">TCLE/TALE</label>
+                <select id="np-tcle">
+                    {% for opcao in tcle_opcoes %}
+                    <option{% if opcao == tcle %} selected{% endif %}>{{ opcao }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% for rotulo, valor in desenho %}
+            <div class="campo">
+                <label for="np-desenho-{{ forloop.counter }}">{{ rotulo }}</label>
+                <input type="text" id="np-desenho-{{ forloop.counter }}" value="{{ valor }}">
+            </div>
+            {% endfor %}
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s2 %}
+    </article>
+
+    <article class="table-card{% if not secao.s3.editavel %} modo-leitura{% endif %}" id="secao-3">
+        <header>
+            <h3>3. Níveis acadêmicos do projeto {% include "contas/pesquisador/_secao_tag.html" with s=secao.s3 %}</h3>
+            <p>Um mesmo projeto pode ter vários níveis, da iniciação ao pós-doutorado. Inclua um por pessoa.</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s3.editavel %} disabled{% endif %}>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Nível</th><th>Pessoa</th><th>Orientador</th><th>Curso ou programa</th><th class="col-acao"></th></tr>
+                </thead>
+                <tbody>
+                    {% for item in niveis_academicos %}
+                    <tr>
+                        <td><span class="tag">{{ item.nivel }}</span></td>
+                        <td>{{ item.pessoa }}</td>
+                        <td>{{ item.orientador }}</td>
+                        <td>{{ item.curso }}</td>
+                        <td><button type="button" class="btn-link">Remover</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="acoes"><button type="button" class="btn-secundario">Incluir nível acadêmico</button></div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s3 %}
+    </article>
+
+    <article class="table-card{% if not secao.s4.editavel %} modo-leitura{% endif %}" id="secao-4">
+        <header>
+            <h3>4. Produtos esperados {% include "contas/pesquisador/_secao_tag.html" with s=secao.s4 %}</h3>
+            <p>Marque todos os que se aplicam.</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s4.editavel %} disabled{% endif %}>
+        <div class="checks checks-grid">
+            {% for rotulo, marcado in produtos_esperados %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s4 %}
+    </article>
+
+    <article class="table-card{% if not secao.s5.editavel %} modo-leitura{% endif %}" id="secao-5">
+        <header><h3>5. Local, financiamento e cronograma {% include "contas/pesquisador/_secao_tag.html" with s=secao.s5 %}</h3></header>
+        <fieldset class="secao-campos"{% if not secao.s5.editavel %} disabled{% endif %}>
+        <p class="rotulo-grupo">Unidades do hospital envolvidas (cada uma dá parecer na etapa 3)</p>
+        <div class="checks checks-grid">
+            {% for rotulo, marcado in unidades %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        <div class="form-grid form-grid-4">
+            <div class="campo">
+                <label for="np-fomento">Fonte de fomento</label>
+                <input type="text" id="np-fomento" value="{{ local.fomento }}">
+            </div>
+            <div class="campo">
+                <label for="np-inicio">Início previsto</label>
+                <input type="text" id="np-inicio" value="{{ local.inicio }}">
+            </div>
+            <div class="campo">
+                <label for="np-termino">Término previsto</label>
+                <input type="text" id="np-termino" value="{{ local.termino }}">
+            </div>
+            <div class="campo">
+                <label for="np-contrapartida">Contrapartida para o HU</label>
+                <input type="text" id="np-contrapartida" value="{{ local.contrapartida }}">
+            </div>
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s5 %}
+    </article>
+
+    <article class="table-card{% if not secao.s6.editavel %} modo-leitura{% endif %}" id="secao-6">
+        <header>
+            <h3>6. Orçamento detalhado {% include "contas/pesquisador/_secao_tag.html" with s=secao.s6 %}</h3>
+            <p>Inclua cada despesa com rubrica, valor e quem custeia. Se o estudo não tiver custos, marque “Estudo sem custos”. O custo assumido pelo HU e o ressarcimento previsto alimentam o painel Financeiro.</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s6.editavel %} disabled{% endif %}>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Rubrica</th><th>Descrição</th><th class="n">Valor</th><th>Quem custeia</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in orcamento %}
+                    <tr>
+                        <td>{{ item.rubrica }}</td>
+                        <td>{{ item.descricao }}</td>
+                        <td class="n">{{ item.valor|brl }}</td>
+                        <td><span class="tag{% if item.quem != 'Fomento' %} aviso{% endif %}">{{ item.quem }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th></th>
+                        <th class="n">{{ orcamento_total|brl }}</th>
+                        <th class="mute">Custo para o HU: {{ custo_hu|brl }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="form-grid form-grid-orcamento">
+            <div class="campo">
+                <label for="np-rubrica">Rubrica</label>
+                <select id="np-rubrica">{% for r in rubricas %}<option>{{ r }}</option>{% endfor %}</select>
+            </div>
+            <div class="campo">
+                <label for="np-descricao">Descrição</label>
+                <input type="text" id="np-descricao">
+            </div>
+            <div class="campo">
+                <label for="np-valor">Valor (R$)</label>
+                <input type="text" id="np-valor" inputmode="decimal">
+            </div>
+            <div class="campo">
+                <label for="np-quem">Quem custeia</label>
+                <select id="np-quem">{% for q in quem_custeia %}<option>{{ q }}</option>{% endfor %}</select>
+            </div>
+        </div>
+        <div class="acoes">
+            <button type="button" class="btn-secundario">Incluir despesa</button>
+            <label class="check"><input type="checkbox"> Estudo sem custos</label>
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s6 %}
+    </article>
+
+    <article class="table-card{% if not secao.s7.editavel %} modo-leitura{% endif %}" id="secao-7">
+        <header>
+            <h3>7. Uso do HU e demandas ao centro de pesquisa {% include "contas/pesquisador/_secao_tag.html" with s=secao.s7 %}</h3>
+            <p>Cada unidade envolvida vê o que se pede a ela na etapa 3; a UGPesq usa estas respostas na análise de exequibilidade (etapa 4).</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s7.editavel %} disabled{% endif %}>
+        <p class="rotulo-grupo">O que será utilizado no HU</p>
+        <div class="checks checks-grid">
+            {% for rotulo, marcado in uso_hu %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        <div class="campo">
+            <label for="np-uso">Descrição do uso (o que, quanto, por quanto tempo, em qual unidade)</label>
+            <textarea id="np-uso" rows="3">{{ uso_hu_descricao }}</textarea>
+        </div>
+        <p class="rotulo-grupo">Demandas ao centro de pesquisa</p>
+        <div class="checks checks-grid">
+            {% for rotulo, marcado in demandas_centro %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        <div class="campo">
+            <label for="np-demandas">Detalhe das demandas e período</label>
+            <textarea id="np-demandas" rows="2">{{ demandas_detalhe }}</textarea>
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s7 %}
+    </article>
+
+    <article class="table-card{% if not secao.s8.editavel %} modo-leitura{% endif %}" id="secao-8">
+        <header>
+            <h3>8. Equipe de pesquisa {% include "contas/pesquisador/_secao_tag.html" with s=secao.s8 %}</h3>
+            <p>A equipe precisa ter ao menos um membro do HU. Informe o tipo de vínculo de cada pessoa. Se precisar de ajuda para incluir um membro do HU na equipe, entre em contato com a equipe da UGPesq.</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s8.editavel %} disabled{% endif %}>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Nome e e-mail</th><th>Papel no projeto</th><th>Acesso ao cadastro</th><th>Vínculo</th><th>ORCID</th><th class="col-acao">No HU</th></tr>
+                </thead>
+                <tbody>
+                    {% for membro in equipe %}
+                    <tr>
+                        <td>{{ membro.nome }}<br><span class="mute">{{ membro.email }}</span></td>
+                        <td>{{ membro.papel }}</td>
+                        <td>{{ membro.acesso }}</td>
+                        <td>{{ membro.vinculo }}</td>
+                        <td class="codigo">{{ membro.orcid }}</td>
+                        <td>{% if membro.no_hu %}<span class="tag ok">Sim</span>{% else %}<span class="tag aviso">Não</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if equipe_tem_hu %}
+        <p class="mute">A equipe tem ao menos um membro do HU.</p>
+        {% else %}
+        <p class="ruim">A equipe ainda não tem nenhum membro do HU.</p>
+        {% endif %}
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s8 %}
+    </article>
+
+    <article class="table-card{% if not secao.s9.editavel %} modo-leitura{% endif %}" id="secao-9">
+        <header><h3>9. Documentos para anexar, conforme o tipo {% include "contas/pesquisador/_secao_tag.html" with s=secao.s9 %}</h3></header>
+        <fieldset class="secao-campos"{% if not secao.s9.editavel %} disabled{% endif %}>
+        <div class="checks checks-coluna">
+            {% for rotulo, marcado in documentos %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> {{ rotulo }}</label>
+            {% endfor %}
+        </div>
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s9 %}
+    </article>
+
+    <article class="table-card{% if not secao.s10.editavel %} modo-leitura{% endif %}" id="secao-10">
+        <header>
+            <h3>10. Declarações e compromissos {% include "contas/pesquisador/_secao_tag.html" with s=secao.s10 %}</h3>
+            <p>Só o coordenador envia e assume as declarações. Data, hora e texto ficam registrados na ficha.</p>
+        </header>
+        <fieldset class="secao-campos"{% if not secao.s10.editavel %} disabled{% endif %}>
+        <label class="check check-destaque"><input type="checkbox"> Li, estou ciente e de acordo com todos os itens abaixo</label>
+        {% for grupo, itens in declaracoes %}
+        <p class="rotulo-grupo">{{ grupo }}</p>
+        <div class="checks checks-coluna">
+            {% for texto, base, marcado in itens %}
+            <label class="check"><input type="checkbox"{% if marcado %} checked{% endif %}> <span>{{ texto }} <span class="mute">(base: {{ base }})</span></span></label>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        </fieldset>
+        {% include "contas/pesquisador/_secao_rodape.html" with s=secao.s10 %}
+    </article>
+
+    <div class="acoes">
+        <button type="button" class="btn-primario"{% if envio_bloqueado %} disabled{% endif %}>Enviar para análise</button>
+        <button type="button" class="btn-secundario">Salvar rascunho</button>
+        {% if envio_bloqueado %}
+        <span class="mute">Desativado: {{ envio_bloqueado }}.</span>
+        {% else %}
+        <span class="mute">O estudo entra na etapa 2, análise documental, com prazo de 5 dias úteis.</span>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% block aba_titulo %}Pesquisadores{% endblock %} - ELO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'contas/css/pesquisador.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page pesquisador-page">
+    <section class="dashboard-hero">
+        <div>
+            <p class="hero-eyebrow">Área do pesquisador</p>
+            <h2>{% block hero_titulo %}{% endblock %}</h2>
+            <p class="hero-subtitle">{% block hero_subtitulo %}{% endblock %}</p>
+        </div>
+    </section>
+
+    <nav class="dash-tabs" aria-label="Área do pesquisador">
+        <a href="{% url 'lista_pesquisadores' %}"{% if aba == 'cadastro' %} aria-current="page"{% endif %}>Meu cadastro</a>
+        <a href="{% url 'pesquisador_estudos' %}"{% if aba == 'estudos' %} aria-current="page"{% endif %}>Meus estudos</a>
+        <a href="{% url 'pesquisador_novo_projeto' %}"{% if aba == 'novo' %} aria-current="page"{% endif %}>Novo projeto</a>
+    </nav>
+
+    <p class="nota">Dados de exemplo: esta área ainda não está ligada ao banco e os botões não salvam.</p>
+
+    {% block corpo %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "contas/pesquisador/_base.html" %}
+
+{% block aba_titulo %}Meus estudos{% endblock %}
+{% block hero_titulo %}Meus estudos{% endblock %}
+{% block hero_subtitulo %}Estudos em que você está na equipe, com situação, devoluções pendentes, parecer ético e produtos.{% endblock %}
+
+{% block corpo %}
+<article class="alerta-devolvido">
+    <h3>Devolvido para ajuste: {{ devolucao.codigo }} · {{ devolucao.apelido }}</h3>
+    <p class="alerta-motivo">{{ devolucao.motivo }}</p>
+    <p class="mute">
+        Devolvido em {{ devolucao.devolvido_em }} na {{ devolucao.etapa }} · previsão de retorno
+        {{ devolucao.retorno_previsto }} ({{ devolucao.prazo_dias_uteis }} dias úteis). O relógio da etapa está suspenso.
+    </p>
+    <form class="form-pesquisador" onsubmit="return false">
+        <div class="campo">
+            <label for="dev-resposta">Resposta e alterações feitas</label>
+            <textarea id="dev-resposta" rows="3" placeholder="Descreva o que foi ajustado e anexe os documentos pedidos."></textarea>
+        </div>
+        <div class="acoes">
+            <button type="button" class="btn-primario">Reenviar para análise</button>
+            <button type="button" class="btn-secundario">Pedir mais prazo</button>
+        </div>
+    </form>
+</article>
+
+<article class="table-card">
+    <header>
+        <h3>Meus estudos</h3>
+    </header>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-codigo">Código</th>
+                    <th>Título e apelido</th>
+                    <th class="col-tipo">Tipo</th>
+                    <th class="col-situacao">Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudo in estudos %}
+                <tr>
+                    <td class="codigo">{{ estudo.codigo }}</td>
+                    <td>{{ estudo.titulo }} <span class="tag apelido">{{ estudo.apelido }}</span></td>
+                    <td>{{ estudo.tipo }}</td>
+                    <td><span class="tag {{ estudo.classe }}">{{ estudo.situacao }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+
+<section class="card-grid">
+    <article class="table-card">
+        <header>
+            <h3>Parecer ético: {{ parecer.codigo }}</h3>
+            <p>Depois da carta de anuência, registre aqui o parecer emitido pelo CEP responsável na Plataforma Brasil. Aprovado leva o estudo à validação; pendência volta para você responder.</p>
+        </header>
+        <form class="form-pesquisador" onsubmit="return false">
+            <div class="form-grid">
+                <div class="campo">
+                    <label for="par-caae">CAAE</label>
+                    <input type="text" id="par-caae" value="{{ parecer.caae }}">
+                </div>
+                <div class="campo">
+                    <label for="par-cep">CEP responsável</label>
+                    <input type="text" id="par-cep" value="{{ parecer.cep }}">
+                </div>
+                <div class="campo">
+                    <label for="par-data">Data do parecer</label>
+                    <input type="text" id="par-data" value="{{ parecer.data }}">
+                </div>
+                <div class="campo">
+                    <label for="par-resultado">Resultado</label>
+                    <select id="par-resultado">
+                        {% for resultado in resultados_parecer %}
+                        <option{% if resultado == parecer.resultado %} selected{% endif %}>{{ resultado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <label class="check"><input type="checkbox"> Parecer do CEP anexado (PDF)</label>
+            <div class="acoes">
+                <button type="button" class="btn-primario">Registrar parecer</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="table-card">
+        <header>
+            <h3>Produtos gerados: {{ produtos.codigo }}</h3>
+            <p>Disponível depois do início autorizado. Inclua cada produto à medida que ele existir.</p>
+        </header>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-tipo-produto">Tipo</th>
+                        <th>Referência</th>
+                        <th class="col-data">Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in produtos.itens %}
+                    <tr>
+                        <td><span class="tag">{{ item.tipo }}</span></td>
+                        <td>{{ item.referencia }}</td>
+                        <td class="col-data">{{ item.data }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <form class="form-pesquisador" onsubmit="return false">
+            <div class="form-grid form-grid-produto">
+                <div class="campo">
+                    <label for="prod-tipo">Tipo de produto</label>
+                    <select id="prod-tipo">
+                        {% for tipo in tipos_produto %}
+                        <option{% if tipo == 'Resumo em congresso' %} selected{% endif %}>{{ tipo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="prod-ref">Referência (DOI, registro, link ou descrição)</label>
+                    <input type="text" id="prod-ref" placeholder="Informe a referência">
+                </div>
+            </div>
+            <div class="acoes">
+                <button type="button" class="btn-primario">Incluir produto</button>
+            </div>
+        </form>
+    </article>
+</section>
+{% endblock %}

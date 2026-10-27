@@ -86,6 +86,8 @@ URL_AREA = {
     'ajustes': AREA_AJUSTES,
     # Pesquisadores
     'lista_pesquisadores': AREA_PESQUISADORES,
+    'pesquisador_estudos': AREA_PESQUISADORES,
+    'pesquisador_novo_projeto': AREA_PESQUISADORES,
     'cadastro': AREA_PESQUISADORES,
     'editar_pesquisador': AREA_PESQUISADORES,
     # Dashboard

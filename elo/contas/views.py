@@ -11,6 +11,7 @@ from django.contrib import messages
 from django import forms
 from .models import Pesquisador, RegistroAcao, AcessoPagina
 from . import acesso
+from . import dados_mock as mock
 
 # Create your views here.
 
@@ -261,14 +262,126 @@ def _admin_required(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
+# --- Área do pesquisador (subabas Meu cadastro, Meus estudos, Novo projeto) ---
+# Ainda com dados de exemplo (contas/dados_mock.py), como os dashboards.
+
 @login_required
 @user_passes_test(_admin_required)
-def lista_pesquisadores(request):
-    pesquisadores = (
-        Pesquisador.objects.select_related('user').order_by('user__first_name', 'user__username')
-    )
-    return render(request, 'contas/lista_pesquisadores.html', {
-        'pesquisadores': pesquisadores,
+def meu_cadastro(request):
+    return render(request, 'contas/pesquisador/meu_cadastro.html', {
+        'aba': 'cadastro',
+        'cadastro': mock.CADASTRO,
+        'vinculos': mock.VINCULOS,
+    })
+
+
+@login_required
+@user_passes_test(_admin_required)
+def meus_estudos(request):
+    return render(request, 'contas/pesquisador/meus_estudos.html', {
+        'aba': 'estudos',
+        'devolucao': mock.DEVOLUCAO,
+        'estudos': mock.ESTUDOS,
+        'parecer': mock.PARECER,
+        'resultados_parecer': mock.RESULTADOS_PARECER,
+        'produtos': mock.PRODUTOS,
+        'tipos_produto': mock.TIPOS_PRODUTO,
+    })
+
+
+def _safe_int(value, fallback):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _lista_numeros(numeros):
+    """[3, 4, 5] -> '3, 4 e 5'."""
+    textos = [str(n) for n in numeros]
+    return ' e '.join([', '.join(textos[:-1]), textos[-1]]) if len(textos) > 1 else ''.join(textos)
+
+
+def _delegacao(como):
+    """Monta a delegação do Novo projeto vista pelo membro `como` da equipe.
+
+    Cada seção é editada só pelo seu responsável; as declarações (seção 10) só
+    pelo coordenador. O envio exige ser o coordenador e todas as seções
+    concluídas."""
+    coordenador = next(m['nome'] for m in mock.EQUIPE if m['acesso'] == 'Coordenador')
+    eh_coordenador = como['acesso'] == 'Coordenador'
+
+    linhas = []
+    for numero, titulo, responsavel, situacao in mock.DELEGACAO:
+        linhas.append({
+            'numero': numero,
+            'titulo': titulo,
+            'responsavel': responsavel,
+            'situacao': situacao,
+            'classe': {'Concluída': 'ok', 'Em preenchimento': 'aviso'}.get(situacao, 'neutra'),
+            'editavel': responsavel == como['nome'],
+        })
+
+    # Estado de cada seção do formulário, acessível no template como secao.s1 ... secao.s10.
+    secao = {f's{linha["numero"]}': linha for linha in linhas}
+    secao['s10'] = {'responsavel': coordenador, 'editavel': eh_coordenador}
+
+    pendentes = [linha['numero'] for linha in linhas if linha['situacao'] != 'Concluída']
+    motivos = []
+    if not eh_coordenador:
+        motivos.append('só o coordenador envia')
+    if pendentes:
+        motivos.append(f'faltam seções concluídas ({_lista_numeros(pendentes)})')
+
+    return {
+        'delegacao': linhas,
+        'secao': secao,
+        'responsaveis': [m['nome'] for m in mock.EQUIPE if m['acesso'] != 'Leitor'],
+        'eh_coordenador': eh_coordenador,
+        'envio_bloqueado': ', e '.join(motivos),
+    }
+
+
+@login_required
+@user_passes_test(_admin_required)
+def novo_projeto(request):
+    orcamento_total = sum(item['valor'] for item in mock.ORCAMENTO)
+    custo_hu = sum(item['valor'] for item in mock.ORCAMENTO if item['quem'].startswith('HU'))
+    # "Você está preenchendo como": troca quem vê o formulário (só na demonstração).
+    indice_como = _safe_int(request.GET.get('como'), mock.PREENCHENDO_COMO)
+    if not 0 <= indice_como < len(mock.EQUIPE):
+        indice_como = mock.PREENCHENDO_COMO
+    return render(request, 'contas/pesquisador/novo_projeto.html', {
+        **_delegacao(mock.EQUIPE[indice_como]),
+        'indice_como': indice_como,
+        'aba': 'novo',
+        'secoes': mock.SECOES,
+        'pendencias': sum(p for _, _, p in mock.SECOES),
+        'preenchimento': mock.PREENCHIMENTO,
+        'identificacao': mock.IDENTIFICACAO,
+        'hospitais': mock.HOSPITAIS,
+        'tipos_estudo': mock.TIPOS_ESTUDO,
+        'classificacao': mock.CLASSIFICACAO,
+        'tcle_opcoes': mock.TCLE_OPCOES,
+        'tcle': mock.TCLE,
+        'desenho': mock.DESENHO,
+        'niveis_academicos': mock.NIVEIS_ACADEMICOS,
+        'produtos_esperados': mock.PRODUTOS_ESPERADOS,
+        'unidades': mock.UNIDADES,
+        'local': mock.LOCAL,
+        'rubricas': mock.RUBRICAS,
+        'quem_custeia': mock.QUEM_CUSTEIA,
+        'orcamento': mock.ORCAMENTO,
+        'orcamento_total': orcamento_total,
+        'custo_hu': custo_hu,
+        'uso_hu': mock.USO_HU,
+        'uso_hu_descricao': mock.USO_HU_DESCRICAO,
+        'demandas_centro': mock.DEMANDAS_CENTRO,
+        'demandas_detalhe': mock.DEMANDAS_DETALHE,
+        'equipe': mock.EQUIPE,
+        'equipe_tem_hu': any(m['no_hu'] for m in mock.EQUIPE),
+        'documentos': mock.DOCUMENTOS,
+        'declaracoes': mock.DECLARACOES,
     })
 
 

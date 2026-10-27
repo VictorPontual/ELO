@@ -1,0 +1,367 @@
+/* Área do pesquisador (Meu cadastro, Meus estudos, Novo projeto).
+   Usa a base visual dos dashboards (dashboard.css): hero, abas, cards e tags. */
+
+.nota-info {
+    background: #e7f4f2;
+    border: 1px solid #c8e4df;
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9rem;
+    color: #1f4d47;
+}
+
+.pesquisador-page .table-card h3 .tag,
+.pesquisador-page .table-card h3 .mute {
+    margin-left: 0.4rem;
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    font-weight: 400;
+    vertical-align: middle;
+}
+
+/* --- Formulários --- */
+.form-pesquisador {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.form-novo {
+    gap: 1.2rem;
+}
+
+.form-novo .table-card {
+    display: grid;
+    gap: 0.9rem;
+    scroll-margin-top: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem 1rem;
+}
+
+.form-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.form-grid-produto {
+    grid-template-columns: 170px minmax(0, 1fr);
+}
+
+.form-grid-orcamento {
+    grid-template-columns: 1fr 1.6fr 0.6fr 1fr;
+}
+
+.campo-largo {
+    grid-column: 1 / -1;
+}
+
+.campo label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.82rem;
+    color: var(--db-muted);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--db-border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--db-ink);
+    font: inherit;
+    font-size: 0.95rem;
+}
+
+.campo textarea {
+    resize: vertical;
+}
+
+.campo input[readonly] {
+    background: #f4f7fb;
+    color: var(--db-muted);
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+    outline: none;
+    border-color: var(--db-cyan);
+    box-shadow: 0 0 0 3px rgba(0, 163, 163, 0.15);
+}
+
+.rotulo-grupo {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--db-slate);
+}
+
+.checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.4rem;
+}
+
+.checks-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.checks-coluna {
+    flex-direction: column;
+}
+
+.check {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    font-size: 0.92rem;
+    color: var(--db-ink);
+}
+
+.check input {
+    margin: 0.2rem 0 0;
+    accent-color: var(--db-cyan);
+}
+
+.check-destaque {
+    font-weight: 600;
+}
+
+/* --- Botões --- */
+.acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.pesquisador-page .btn-primario,
+.pesquisador-page .btn-secundario {
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.pesquisador-page .btn-primario {
+    background: var(--db-cyan);
+    color: #ffffff;
+    border: 1px solid var(--db-cyan);
+}
+
+.pesquisador-page .btn-primario:hover {
+    background: #008b8b;
+}
+
+.pesquisador-page .btn-secundario {
+    background: #ffffff;
+    color: var(--db-slate);
+    border: 1px solid var(--db-border);
+}
+
+.pesquisador-page .btn-secundario:hover {
+    background: #eef3fb;
+}
+
+.pesquisador-page .btn-link {
+    padding: 0;
+    background: none;
+    border: none;
+    color: #a52a2a;
+    font-size: 0.88rem;
+}
+
+.pesquisador-page .btn-link:hover {
+    background: none;
+    text-decoration: underline;
+}
+
+/* --- Meus estudos --- */
+.alerta-devolvido {
+    display: grid;
+    gap: 0.6rem;
+    background: #fbefe9;
+    border: 1px solid #ecc5b4;
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.alerta-devolvido h3 {
+    margin: 0;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+    font-size: 1.08rem;
+    color: #8a3a1c;
+}
+
+.alerta-devolvido p {
+    margin: 0;
+}
+
+.alerta-motivo {
+    font-weight: 500;
+}
+
+.tag.apelido {
+    margin-left: 0.3rem;
+    background: #eef3fb;
+    color: var(--db-slate);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.75rem;
+}
+
+.table-card .col-tipo { width: 12rem; }
+.table-card .col-situacao { width: 15rem; }
+.table-card .col-data { width: 7.5rem; white-space: nowrap; }
+.table-card .col-acao { width: 6rem; }
+.table-card .col-tipo-produto { width: 10rem; }
+
+.table-card tfoot th {
+    border-bottom: none;
+    padding: 0.7rem;
+    text-align: left;
+}
+
+.table-card tfoot th.n {
+    text-align: right;
+}
+
+/* --- Novo projeto: delegação do preenchimento --- */
+.delegacao {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.campo-como {
+    max-width: 380px;
+}
+
+.table-card td.campo select {
+    padding: 0.35rem 0.55rem;
+}
+
+.table-card .col-situacao-secao { width: 11rem; }
+.table-card .col-visao { width: 12rem; }
+
+.voce-edita {
+    color: #0f5c4d;
+}
+
+.tag.neutra {
+    background: #edf0f4;
+    color: var(--db-slate);
+}
+
+.secao-campos {
+    display: grid;
+    gap: 0.9rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.form-novo .modo-leitura {
+    background: #fafbfc;
+}
+
+.modo-leitura .secao-campos {
+    opacity: 0.6;
+}
+
+.secao-rodape {
+    margin: 0;
+    font-size: 0.82rem;
+}
+
+.pesquisador-page .btn-primario:disabled {
+    background: #c3ccd6;
+    border-color: #c3ccd6;
+    cursor: not-allowed;
+}
+
+/* --- Novo projeto: barra de preenchimento --- */
+.progresso {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 5;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.progresso-topo {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.progresso-barra {
+    height: 10px;
+    background: #e3e9f1;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progresso-barra i {
+    display: block;
+    height: 100%;
+    background: var(--db-cyan);
+    border-radius: 6px;
+}
+
+.secoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.secao-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid var(--db-cyan);
+    border-radius: 8px;
+    color: #007a7a;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+
+.secao-chip:hover {
+    background: #e7f4f2;
+}
+
+.secao-chip .pend {
+    padding: 0 0.4rem;
+    border-radius: 4px;
+    background: #f6d9d9;
+    color: #a52a2a;
+}
+
+.progresso p.mute {
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 1080px) {
+    .form-grid-4,
+    .checks-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .form-grid,
+    .form-grid-4,
+    .form-grid-produto,
+    .form-grid-orcamento,
+    .checks-grid {
+        grid-template-columns: 1fr;
+    }
+}
