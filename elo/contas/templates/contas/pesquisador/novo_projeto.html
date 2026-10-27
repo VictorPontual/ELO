@@ -70,9 +70,17 @@
 <article class="table-card progresso">
     <div class="progresso-topo">
         <b>Preenchimento: {{ preenchimento }}%</b>
-        <span class="mute">{{ pendencias }} pendências para poder enviar</span>
+        <span class="progresso-resumo">
+            <span class="mute">{{ pendencias }} pendências para poder enviar</span>
+            <button type="button" class="btn-recolher" id="progresso-recolher"
+                    aria-expanded="true" aria-controls="progresso-detalhes" title="Minimizar">
+                <span aria-hidden="true">▾</span>
+                <span class="sr-only">Minimizar ou expandir o preenchimento</span>
+            </button>
+        </span>
     </div>
     <div class="progresso-barra"><i style="width: {{ preenchimento }}%"></i></div>
+    <div id="progresso-detalhes" class="progresso-detalhes">
     <nav class="secoes" aria-label="Seções do formulário">
         {% for numero, titulo, pend in secoes %}
         <a href="#secao-{{ numero }}" class="secao-chip">
@@ -82,6 +90,7 @@
         {% endfor %}
     </nav>
     <p class="mute">Ao tentar enviar com pendência, o envio é bloqueado e as seções com pendência ficam destacadas.</p>
+    </div>
 </article>
 
 <form class="form-pesquisador form-novo" onsubmit="return false">
@@ -387,4 +396,30 @@
         {% endif %}
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Minimiza o card de preenchimento (que acompanha a rolagem) e lembra a escolha.
+    const card = document.querySelector('.progresso');
+    const botao = document.getElementById('progresso-recolher');
+    if (!card || !botao) return;
+    const CHAVE = 'elo.novoProjeto.progressoRecolhido';
+
+    function aplicar(recolhido) {
+        card.classList.toggle('recolhido', recolhido);
+        botao.setAttribute('aria-expanded', String(!recolhido));
+        botao.title = recolhido ? 'Expandir' : 'Minimizar';
+    }
+
+    try { aplicar(localStorage.getItem(CHAVE) === '1'); } catch (e) { /* sem storage */ }
+
+    botao.addEventListener('click', function () {
+        const recolhido = !card.classList.contains('recolhido');
+        aplicar(recolhido);
+        try { localStorage.setItem(CHAVE, recolhido ? '1' : '0'); } catch (e) { /* sem storage */ }
+    });
+})();
+</script>
 {% endblock %}

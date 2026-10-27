@@ -301,6 +301,67 @@
     gap: 0.5rem;
 }
 
+.progresso-resumo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.pesquisador-page .btn-recolher {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--db-border);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--db-slate);
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.pesquisador-page .btn-recolher:hover {
+    background: #eef3fb;
+}
+
+.btn-recolher span[aria-hidden] {
+    transition: transform 0.2s;
+}
+
+.progresso.recolhido .btn-recolher span[aria-hidden] {
+    transform: rotate(-90deg);
+}
+
+.progresso-detalhes {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.progresso.recolhido {
+    gap: 0.4rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+.progresso.recolhido .progresso-detalhes {
+    display: none;
+}
+
+.progresso.recolhido .progresso-barra {
+    height: 6px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
 .progresso-barra {
     height: 10px;
     background: #e3e9f1;
