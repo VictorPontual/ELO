@@ -93,6 +93,35 @@ document.addEventListener('DOMContentLoaded', function () {
         barrasHorizontais(canvas, serie, formatos[formato] || formatos.num, formatosEixo[formato]);
     });
 
+    // --- Card com um gráfico e botões que trocam o agrupamento (ex.: Financeiro) ---
+    document.querySelectorAll('[data-alternavel]').forEach(function (card) {
+        const canvas = card.querySelector('canvas');
+        const vazio = card.querySelector('.vazio');
+        const titulo = card.querySelector('[data-titulo-agrupamento]');
+        const botoes = Array.from(card.querySelectorAll('.seg-btn[data-agrupamento]'));
+        const formato = canvas.dataset.formato;
+        let grafico = null;
+
+        function render(btn) {
+            const serie = chartsData[btn.dataset.agrupamento];
+            const temDados = serie && serie.labels.length;
+            botoes.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+            if (titulo) titulo.textContent = btn.dataset.titulo;
+            if (grafico) grafico.destroy();
+            grafico = null;
+            canvas.parentElement.hidden = !temDados;
+            vazio.hidden = Boolean(temDados);
+            if (temDados) {
+                grafico = barrasHorizontais(canvas, serie, formatos[formato] || formatos.num, formatosEixo[formato]);
+            }
+        }
+
+        botoes.forEach(function (btn) {
+            btn.addEventListener('click', function () { render(btn); });
+        });
+        render(botoes[0]);
+    });
+
     // --- Painel: aprovação institucional por período (Trimestre / Bimestre) ---
     const canvasPeriodo = document.getElementById('chartPeriodo');
     const periodo = chartsData.periodo;

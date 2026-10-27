@@ -41,20 +41,21 @@
     </article>
 </section>
 
-<section class="card-grid card-grid-3">
-    <article class="chart-card">
-        <h3>Orçamento por fonte</h3>
-        <div class="grafico"><canvas data-serie="fonte" data-formato="brl"></canvas></div>
-    </article>
-    <article class="chart-card">
-        <h3>Orçamento por rubrica</h3>
-        <div class="grafico"><canvas data-serie="rubrica" data-formato="brl"></canvas></div>
-    </article>
-    <article class="chart-card">
-        <h3>Orçamento por tipo de estudo</h3>
-        <div class="grafico"><canvas data-serie="tipo" data-formato="brl"></canvas></div>
-    </article>
-</section>
+<article class="chart-card" data-alternavel>
+    <header class="card-header">
+        <div>
+            <h3>Orçamento por <span data-titulo-agrupamento>fonte</span></h3>
+            <p>Soma dos itens de orçamento dos estudos</p>
+        </div>
+        <div class="seg-toggle" role="group" aria-label="Agrupar por">
+            <button type="button" class="seg-btn" data-agrupamento="fonte" data-titulo="fonte" aria-pressed="true">Fonte</button>
+            <button type="button" class="seg-btn" data-agrupamento="rubrica" data-titulo="rubrica" aria-pressed="false">Rubrica</button>
+            <button type="button" class="seg-btn" data-agrupamento="tipo" data-titulo="tipo de estudo" aria-pressed="false">Tipo de estudo</button>
+        </div>
+    </header>
+    <div class="grafico"><canvas data-formato="brl" aria-label="Orçamento agrupado"></canvas></div>
+    <p class="vazio" hidden>Sem dados para exibir.</p>
+</article>
 
 <article class="table-card">
     <header><h3>Estudos com maior orçamento</h3></header>
